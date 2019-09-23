@@ -1,5 +1,10 @@
 <html>
 <head>
-    <h1> Hello Twitter Users! Welcome to our dash board </h1>
+     {%if title%}
+	<title> {{ title }} </title>
+     {%else%}
+	<title> TwitterDashboard </title>
+     {% endif %} 
+<h1> Hello Twitter Users! Welcome to our dash board </h1>
 </head>  
 </html>
