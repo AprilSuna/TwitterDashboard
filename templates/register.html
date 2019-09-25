@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+      <meta charset="UTF-8">
+      <title>Login</title>
+  </head>
+  <body>
+      <h2>Please Register</h2>
+     <form action='{{ url_for('.index') }}' method="POST">
+         <table>
+             <tr>
+                 <td>Username:</td>
+                 <td><input type="text" name='username' placeholder="Username"></td>
+             </tr>
+             <tr>
+                 <td>Password:</td>
+                 <td><input type="password" name='password' placeholder="Password"></td>
+             </tr>
+             <tr>
+                 <td>Password:</td>
+                 <td><input type="password" name='password-repeat' placeholder="Repeat Password"></td>
+             </tr>
+             <tr>
+                 <td><input type="submit" value="Registration"></td>
+             </tr>
+         </table>
+     </form>
+ </body>
+ </html>

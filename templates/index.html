@@ -1,0 +1,21 @@
+<html>
+<head>
+	{%if title%}
+	<title> {{ title }} </title>
+	{%else%}
+	<title> TwitterDashboard </title>
+	{% endif %} 
+	<h1> Hello Twitter Users! Welcome to our dash board </h1>
+	<form action='{{ url_for('.login') }}' method="POST">
+		<tr>
+			<td><input type="submit" value="Login"></td>
+		</tr>
+	</form>
+	<form action='{{ url_for('.register') }}' method="POST">
+		<tr>
+			<td><input type="submit" value="Registration"></td>
+		</tr>
+	</form>
+
+</head>  
+</html>
