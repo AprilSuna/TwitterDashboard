@@ -2,6 +2,17 @@ from flask import *
 
 app = Flask(__name__)
 
+
+
+@app.route('/')
+def index():
+    title = 'TwitterDashboardHomePage'
+    return render_template('index.html', title=title)
+
+if __name__ == '__main__':
+    app.run(host='127.0.0.1',port=8080, debug=True)
+
+
 @app.route("/login",methods=['POST','GET'])
 def login():
     error = None
@@ -12,10 +23,9 @@ def login():
             return redirect(url_for('index'))
     return render_template('login.html',error=error)
 
-@app.route('/')
-def index():
-    title = 'TwitterDashboardHomePage'
-    return render_template('index.html', title=title)
 
-if __name__ == '__main__':
-    app.run(host='127.0.0.1',port=8080, debug=True)
+@app.route("/register",methods=['POST','GET'])
+def register():
+    pass
+
+
