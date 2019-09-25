@@ -8,17 +8,7 @@ app = Flask(__name__)
 # sess = Session()
 # sess.init_app(app)
 
-# april's tokens
-# access_token = '1106277569752633351-z9XGTbAL7ZxEqT7aToonp8NvO4XuQJ'
-# access_token_secret = 'EEKofWc9VV0a4V16wtdAoPSvZHbhZtriyZgKZTf20M7Bq'
-# consumer_key = '8lkEPXD9VBXwNxES21RR8k0vZ'
-# consumer_secret = 'hkLL9WWMnhbz7trMlfIOgzyctXayT1ZzUYilmdWi16xEhJs4FM'
 
-# kelly's tokens
-access_token = '364156861-cSyt6v8Rjg4n8aVxRqI7stklhtvv69raNR7X3Tp9'
-access_token_secret = 'q9AppxYixPtI7HAi4Fxxd2i6Nl6ESGDqzCVqVOOFjr0FB'
-consumer_key = '0IvIaXCm8CUHeuayBiFS3Blwd' 
-consumer_secret = 'WlgHUfC7waVlRrktuyySBRQHwVSBPFpxEud2hGY08i83NFXpNk'
 
 callback_uri = 'https://localhost:8080/callback'
 request_token_url = 'https://api.twitter.com/oauth/request_token'
