@@ -73,7 +73,7 @@ def callback():
     auth.get_access_token(verifier)
     session['token'] = (auth.access_token, auth.access_token_secret)
     print(auth.access_token, auth.access_token_secret)
-
+    # return redirect(url_for("index"))
     return redirect('/app')
 
 @app.route('/app')
@@ -83,11 +83,12 @@ def get_tweets():
     auth.set_access_token(token, token_secret)
     api = tweepy.API(auth)
     tweets = api.user_timeline(screen_name=username)                                                                            
-    return [{'tweet': t.text,
+    print([{'tweet': t.text,
               'created_at': t.created_at, 
               'username': username,
               'headshot_url': t.user.profile_image_url}
-           for t in tweets]
+           for t in tweets])
+    return render_template('app.html')
 
 
 
