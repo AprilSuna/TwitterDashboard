@@ -1,6 +1,7 @@
 from flask import Flask, session, redirect, request, render_template
 import tweepy
 import logging
+from collections import defaultdict
 
 app = Flask(__name__)
 app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
@@ -88,19 +89,28 @@ def callback():
     return redirect('/app')
 
 
-@app.route('/app')
+@app.route('/app') # rate limit, might use stream api
 def get_tweets():
     token, token_secret = session['token']
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
     auth.set_access_token(token, token_secret)
     api = tweepy.API(auth)
 
-    tweets = api.user_timeline(screen_name=session['username'])
-    print([{'tweet': t.text,
-              'created_at': t.created_at,
-              'username': session['username'],
-              'headshot_url': t.user.profile_image_url}
-           for t in tweets]) 
+    tweets = api.user_timeline(screen_name=session['username'], count=200) # max count
+    tweet_replies = []
+    
+    for tweet in tweets:
+        tmp = {}
+        tmp['tid'] = tweet.id
+        tmp['context'] = tweet.text
+        tmp['hashtag'] = tweet.entities['hashtags']
+        tmp['reply'] = []
+        for reply in tweepy.Cursor(api.search, q=session['username'], since_id=tweet.id_str, result_type="mixed", count=10).items(10):
+            tmp['reply'].append({'uid': reply.user.id, 'uname': reply.user.name, 'reply': reply.text})
+            tweet_replies.append(tmp)
+
+    # save to db and display for labeling
+
     return render_template('app.html')
 
 
