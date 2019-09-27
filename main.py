@@ -1,8 +1,12 @@
 from flask import *
 import tweepy
-from flask_session import Session
+# import numpy
+# from flask_session import Session
+import logging
+
 
 app = Flask(__name__)
+app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
 # app.config['SESSION_TYPE'] = 'redis'
 # app.config['SECRET_KEY'] = 'redsfsfsfsfis'
 # sess = Session()
@@ -20,15 +24,17 @@ access_token_secret = 'q9AppxYixPtI7HAi4Fxxd2i6Nl6ESGDqzCVqVOOFjr0FB'
 consumer_key = '0IvIaXCm8CUHeuayBiFS3Blwd' 
 consumer_secret = 'WlgHUfC7waVlRrktuyySBRQHwVSBPFpxEud2hGY08i83NFXpNk'
 
-callback_uri = 'https://localhost:8080/callback'
+callback_uri = 'https://twitterdashboard.appspot.com/callback'
 request_token_url = 'https://api.twitter.com/oauth/request_token'
 authorization_url = 'https://api.twitter.com/oauth/authorize'
 access_token_url = 'https://api.twitter.com/oauth/access_token'
+
 
 @app.route('/',methods=['POST','GET'])
 def index():
     title = 'TwitterDashboardHomePage'
     return render_template('index.html', title=title)
+
 
 @app.route("/login",methods=['POST','GET'])
 def login():
@@ -42,13 +48,13 @@ def login():
 
 @app.route("/register",methods=['POST','GET'])
 def register():
-    if request.method == 'POST':
+    # if request.method == 'POST':
         # get username and password from request.form
         # save to our database, it's the login info for our service
-        username = request.form.get('username')
-        password = request.form.get('password')
-
-        return redirect('/auth')
+        # username = request.form.get('username')
+        # password = request.form.get('password')
+        # return render_template('register.html',error=error)
+    return redirect('/auth')
 
 
 @app.route("/auth",methods=['POST','GET'])
@@ -57,6 +63,8 @@ def auth():
     redirect_url = auth.get_authorization_url()
     print(redirect_url)
     print(auth.request_token)
+    logging.info(redirect_url)
+    logging.info(auth.request_token)
     session['request_token'] = auth.request_token
 
     return redirect(redirect_url)
@@ -76,5 +84,4 @@ def callback():
 
 
 if __name__ == '__main__':
-    app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
     app.run(host='127.0.0.1',port=8080, debug=True)
