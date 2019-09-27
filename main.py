@@ -1,6 +1,6 @@
 from flask import Flask, session, redirect, request, render_template
 import tweepy
-# from flask_session import Session
+import logging
 
 app = Flask(__name__)
 app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
@@ -26,12 +26,14 @@ request_token_url = 'https://api.twitter.com/oauth/request_token'
 authorization_url = 'https://api.twitter.com/oauth/authorize'
 access_token_url = 'https://api.twitter.com/oauth/access_token'
 
-@app.route('/',methods=['POST','GET'])
+
+@app.route('/', methods=['POST', 'GET'])
 def index():
     title = 'TwitterDashboardHomePage'
     return render_template('index.html', title=title)
 
-@app.route("/login",methods=['POST','GET'])
+
+@app.route("/login", methods=['POST', 'GET'])
 def login():
     error = None
     # if request.method == 'POST':
@@ -39,42 +41,52 @@ def login():
     #         error= "sorry"
     #     else:
     #         return redirect(url_for('index'))
-    return render_template('login.html',error=error)
+    return render_template('login.html', error=error)
 
-@app.route("/register",methods=['POST','GET'])
+
+@app.route("/register", methods=['POST', 'GET'])
 def register():
     if request.method == 'POST':
         # get username and password from request.form
         # save to our database, it's the login info for our service
-        username = request.form.get('username')
-        password = request.form.get('password')
-        print('username:', username)
-        print('password:', password)
+        session['username'] = request.form.get('username')
+        session['password'] = request.form.get('password')
+
+        print('username:', session['username'])
+        print('password:', session['password'])
         return redirect('/auth')
-    return render_template('register.html')
-    
-@app.route("/auth",methods=['POST','GET'])
+    return render_template('register.html', error=None)
+
+
+@app.route("/auth", methods=['POST', 'GET'])
 def auth():
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback_uri)
     redirect_url = auth.get_authorization_url()
+
+    logging.info(redirect_url)
+    logging.info(auth.request_token)
+
     # print(redirect_url)
     # print(auth.request_token)
+
     session['request_token'] = auth.request_token
     return redirect(redirect_url)
 
-@app.route("/callback",methods=['POST','GET'])
+
+@app.route("/callback", methods=['POST', 'GET'])
 def callback():
     request_token = session['request_token']
     del session['request_token']
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback_uri)
     auth.request_token = request_token
     verifier = request.args.get('oauth_verifier')
-    print(verifier)
+    logging.info(verifier)
     auth.get_access_token(verifier)
     session['token'] = (auth.access_token, auth.access_token_secret)
     print(auth.access_token, auth.access_token_secret)
-    # return redirect(url_for("index"))
+
     return redirect('/app')
+
 
 @app.route('/app')
 def get_tweets():
@@ -82,16 +94,15 @@ def get_tweets():
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
     auth.set_access_token(token, token_secret)
     api = tweepy.API(auth)
-    tweets = api.user_timeline(screen_name=username)                                                                            
+
+    tweets = api.user_timeline(screen_name=session['username'])
     print([{'tweet': t.text,
-              'created_at': t.created_at, 
-              'username': username,
+              'created_at': t.created_at,
+              'username': session['username'],
               'headshot_url': t.user.profile_image_url}
-           for t in tweets])
+           for t in tweets]) 
     return render_template('app.html')
 
 
-
 if __name__ == '__main__':
-    # app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
-    app.run(host='127.0.0.1',port=8080, debug=True)
+    app.run(host='127.0.0.1', port=8080, debug=True)
