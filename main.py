@@ -1,8 +1,9 @@
-from flask import *
+from flask import Flask, session, redirect, request, render_template
 import tweepy
-from flask_session import Session
+# from flask_session import Session
 
 app = Flask(__name__)
+app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
 # app.config['SESSION_TYPE'] = 'redis'
 # app.config['SECRET_KEY'] = 'redsfsfsfsfis'
 # sess = Session()
@@ -20,7 +21,7 @@ access_token_secret = 'q9AppxYixPtI7HAi4Fxxd2i6Nl6ESGDqzCVqVOOFjr0FB'
 consumer_key = '0IvIaXCm8CUHeuayBiFS3Blwd' 
 consumer_secret = 'WlgHUfC7waVlRrktuyySBRQHwVSBPFpxEud2hGY08i83NFXpNk'
 
-callback_uri = 'https://localhost:8080/callback'
+callback_uri = 'https://twitterdashboard.appspot.com/callback'
 request_token_url = 'https://api.twitter.com/oauth/request_token'
 authorization_url = 'https://api.twitter.com/oauth/authorize'
 access_token_url = 'https://api.twitter.com/oauth/access_token'
@@ -47,18 +48,18 @@ def register():
         # save to our database, it's the login info for our service
         username = request.form.get('username')
         password = request.form.get('password')
-
+        print('username:', username)
+        print('password:', password)
         return redirect('/auth')
-
-
+    return render_template('register.html')
+    
 @app.route("/auth",methods=['POST','GET'])
 def auth():
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback_uri)
     redirect_url = auth.get_authorization_url()
-    print(redirect_url)
-    print(auth.request_token)
+    # print(redirect_url)
+    # print(auth.request_token)
     session['request_token'] = auth.request_token
-
     return redirect(redirect_url)
 
 @app.route("/callback",methods=['POST','GET'])
@@ -68,13 +69,28 @@ def callback():
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback_uri)
     auth.request_token = request_token
     verifier = request.args.get('oauth_verifier')
+    print(verifier)
     auth.get_access_token(verifier)
     session['token'] = (auth.access_token, auth.access_token_secret)
     print(auth.access_token, auth.access_token_secret)
 
-    return redirect('/index')
+    return redirect('/app')
+
+@app.route('/app')
+def get_tweets():
+    token, token_secret = session['token']
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
+    auth.set_access_token(token, token_secret)
+    api = tweepy.API(auth)
+    tweets = api.user_timeline(screen_name=username)                                                                            
+    return [{'tweet': t.text,
+              'created_at': t.created_at, 
+              'username': username,
+              'headshot_url': t.user.profile_image_url}
+           for t in tweets]
+
 
 
 if __name__ == '__main__':
-    app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
+    # app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
     app.run(host='127.0.0.1',port=8080, debug=True)
