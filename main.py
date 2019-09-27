@@ -1,6 +1,24 @@
-from flask import *
+from flask import render_template, Flask, redirect, request
+from google.cloud import datastore
+from util.hash import random_salt, hash_pbkdf2
+from util.functions import alreadyExist
 import tweepy
-from flask_session import Session
+
+datastore_client = datastore.Client('twitterdashboard')
+
+
+def store_user_profile(username, password):
+    complete_key = datastore_client.key('Userfile', username)
+    entity = datastore.Entity(key=complete_key)
+    salt = random_salt()
+    saltedPw = hash_pbkdf2(password, salt)
+    entity.update({
+        'username': username,
+        'saltedPw': saltedPw,
+        'salt': salt
+    })
+    datastore_client.put(entity)
+
 
 app = Flask(__name__)
 # app.config['SESSION_TYPE'] = 'redis'
@@ -25,56 +43,67 @@ request_token_url = 'https://api.twitter.com/oauth/request_token'
 authorization_url = 'https://api.twitter.com/oauth/authorize'
 access_token_url = 'https://api.twitter.com/oauth/access_token'
 
-@app.route('/',methods=['POST','GET'])
+
+@app.route('/', methods=['POST', 'GET'])
 def index():
     title = 'TwitterDashboardHomePage'
     return render_template('index.html', title=title)
 
-@app.route("/login",methods=['POST','GET'])
+
+@app.route("/login", methods=['POST', 'GET'])
 def login():
     error = None
-    # if request.method == 'POST':
-    #     if request.form['username'] != 'admin' or request.form['password'] != 'admin123':
-    #         error= "sorry"
-    #     else:
-    #         return redirect(url_for('index'))
-    return render_template('login.html',error=error)
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        key = datastore_client.key('Userfile', username)
+        if key['saltedPw'] == hash_pbkdf2(password, key['saltedPw']):
+            return redirect('/')
+        else:
+            error = 'Please use make sure your password is correct!'
+    return render_template('login.html', error=error)
 
-@app.route("/register",methods=['POST','GET'])
+
+@app.route("/register", methods=['POST', 'GET'])
 def register():
+    error = None
     if request.method == 'POST':
         # get username and password from request.form
-        # save to our database, it's the login info for our service
+        # save to google data store
         username = request.form.get('username')
         password = request.form.get('password')
+        if alreadyExist(username):
+            error = "Ooops! The username has already exit, please use another!"
+        else:
+            store_user_profile(username, password)
+    return render_template('register.html', error=error)
+    # return redirect('/auth')
 
-        return redirect('/auth')
+# @app.route("/auth", methods=['POST', 'GET'])
+# def auth():
+#     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback_uri)
+#     redirect_url = auth.get_authorization_url()
+#     print(redirect_url)
+#     print(auth.request_token)
+#     session['request_token'] = auth.request_token
+
+#     return redirect(redirect_url)
 
 
-@app.route("/auth",methods=['POST','GET'])
-def auth():
-    auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback_uri)
-    redirect_url = auth.get_authorization_url()
-    print(redirect_url)
-    print(auth.request_token)
-    session['request_token'] = auth.request_token
+# @app.route("/callback",methods=['POST','GET'])
+# def callback():
+#     request_token = session['request_token']
+#     del session['request_token']
+#     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback_uri)
+#     auth.request_token = request_token
+#     verifier = request.args.get('oauth_verifier')
+#     auth.get_access_token(verifier)
+#     session['token'] = (auth.access_token, auth.access_token_secret)
+#     print(auth.access_token, auth.access_token_secret)
 
-    return redirect(redirect_url)
-
-@app.route("/callback",methods=['POST','GET'])
-def callback():
-    request_token = session['request_token']
-    del session['request_token']
-    auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback_uri)
-    auth.request_token = request_token
-    verifier = request.args.get('oauth_verifier')
-    auth.get_access_token(verifier)
-    session['token'] = (auth.access_token, auth.access_token_secret)
-    print(auth.access_token, auth.access_token_secret)
-
-    return redirect('/index')
+#     return redirect('/index')
 
 
 if __name__ == '__main__':
     app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
-    app.run(host='127.0.0.1',port=8080, debug=True)
+    app.run(host='127.0.0.1', port=8080,  debug=True)
