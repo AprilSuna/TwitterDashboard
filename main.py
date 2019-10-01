@@ -9,16 +9,17 @@ datastore_client = datastore.Client('twitterdashboard')
 
 
 def store_user_profile(username, password):
-    complete_key = datastore_client.key('Userfile', username)
-    entity = datastore.Entity(key=complete_key)
+    kind = 'user_file'
+    name = username
+    task_key = datastore_client.key(kind, name)
+    entity = datastore.Entity(key=task_key)
     salt = random_salt()
     saltedPw = hash_pbkdf2(password, salt)
-    entity.update({
-        'username': username,
-        'saltedPw': saltedPw,
-        'salt': salt
-    })
+    entity['username'] = username
+    entity['saltedPw'] = saltedPw
+    entity['salt'] = salt
     datastore_client.put(entity)
+    print('Saved {}: {}'.format(entity.key.name, entity['saltedPw']))
 
 
 app = Flask(__name__)
@@ -48,6 +49,7 @@ def login():
     # get stored username and password from datastore
     error = None
     if request.method == 'POST':
+<<<<<<< HEAD
         session['username'] = request.form.get("username")
         session['password'] = request.form.get("password")
         if session['username'] and session['password']:
@@ -60,12 +62,29 @@ def login():
                 print("Please use make sure your password is correct!")
                 error = 'Invalid password'
     return redirect('/app', error=error)
+=======
+        username = request.form.get("username")
+        password = request.form.get("password")
+        if username and password:
+            print(username, password)
+            key = datastore_client.key("user_file", username)
+            entity = datastore_client.get(key)
+            print(entity)
+            if not entity:
+                print("No username found")
+                error = 'Invalid username'
+            elif entity["saltedPw"] != hash_pbkdf2(password, entity['saltedPw']):
+                print("Please use make sure your password is correct!")
+                error = 'Invalid password'
+    return render_template('login.html', error=error)
+>>>>>>> refs/remotes/origin/april
 
 
 @app.route("/register", methods=['POST', 'GET'])
 def register():
 	error = None
     if request.method == 'POST':
+<<<<<<< HEAD
         session['username'] = request.form.get('username')
         session['password'] = request.form.get('password')
         rePassword = request.form.get("password-repeat")
@@ -78,12 +97,33 @@ def register():
             store_user_profile(session['username'], session['password'])
     # return render_template('register.html', error=error)
     return redirect('/auth', error=error)
+=======
+        username = request.form.get("username")
+        password = request.form.get("password")
+        rePassword = request.form.get("password-repeat")
+        if username and password:
+            if password != rePassword:
+                error = "Make sure the passwords match with each other."
+            if alreadyExist(username):
+                error = "Ooops! The username has already exit, please use another!"
+            print(username, password)
+            print(type(username), type(password))
+            store_user_profile(str(username), str(password))
+    return render_template('register.html', error=error)
+    # return redirect('/auth')
+
+
+@app.errorhandler(404)
+def not_found(e):
+    return render_template('custom_page.html'), 404
+>>>>>>> refs/remotes/origin/april
 
 
 @app.route("/auth", methods=['POST', 'GET'])
 def auth():
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback_uri)
     redirect_url = auth.get_authorization_url()
+<<<<<<< HEAD
 
     logging.info(redirect_url)
     logging.info(auth.request_token)
@@ -160,6 +200,27 @@ def get_tweets():
     # save to db and display for labeling
 
     return render_template('app.html')
+=======
+    print(redirect_url)
+    print(auth.request_token)
+    session['request_token'] = auth.request_token
+
+    return redirect(redirect_url)
+
+
+@app.route("/callback",methods=['POST','GET'])
+def callback():
+    request_token = session['request_token']
+    del session['request_token']
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback_uri)
+    auth.request_token = request_token
+    verifier = request.args.get('oauth_verifier')
+    auth.get_access_token(verifier)
+    session['token'] = (auth.access_token, auth.access_token_secret)
+    print(auth.access_token, auth.access_token_secret)
+
+    return redirect('/index')
+>>>>>>> refs/remotes/origin/april
 
 
 if __name__ == '__main__':
