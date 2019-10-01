@@ -2,6 +2,7 @@ from flask import Flask, session, redirect, request, render_template
 import tweepy
 import logging
 from collections import defaultdict
+from utils import StreamListener
 
 app = Flask(__name__)
 app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
@@ -36,25 +37,24 @@ def index():
 
 @app.route("/login", methods=['POST', 'GET'])
 def login():
+    # should redirect to app if it's not user's first visit
+    # get stored username and password from datastore
     error = None
-    # if request.method == 'POST':
-    #     if request.form['username'] != 'admin' or request.form['password'] != 'admin123':
-    #         error= "sorry"
-    #     else:
-    #         return redirect(url_for('index'))
-    return render_template('login.html', error=error)
+    return redirect('/app', error=error)
 
 
 @app.route("/register", methods=['POST', 'GET'])
 def register():
     if request.method == 'POST':
         # get username and password from request.form
-        # save to our database, it's the login info for our service
         session['username'] = request.form.get('username')
         session['password'] = request.form.get('password')
 
         print('username:', session['username'])
         print('password:', session['password'])
+
+        # save to our database, it's the login info for our service
+
         return redirect('/auth')
     return render_template('register.html', error=None)
 
@@ -86,16 +86,41 @@ def callback():
     session['token'] = (auth.access_token, auth.access_token_secret)
     print(auth.access_token, auth.access_token_secret)
 
+    # save access_token, access_token_secret to datastore for reuse
+
     return redirect('/app')
 
 
 @app.route('/app') # rate limit, might use stream api
 def get_tweets():
-    token, token_secret = session['token']
+    # user's first visit to our service
+    # redirected from auth
+    # get tokens directly from session 
+    print(request.referrer)
+    # if request.referrer == 'auth':
+    if session['token']:
+        token, token_secret = session['token']
+    else:
+        # query tokens from datastore with session username and password
+
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
     auth.set_access_token(token, token_secret)
     api = tweepy.API(auth)
 
+    # set up streaming api
+    # using username as screen_name, have to ensure they are the same!!
+    if not session['token']:
+        print('start streaming')
+        stream = tweepy.Stream(auth=api.auth, listener=StreamListener())
+        user = api.get_user(screen_name=screen_name)
+        stream.filter(follow=[user.id_str], is_async=True)
+
+        # save to datastore
+        # change in StreamListener class
+
+    # search api
+    # get initial tweets for labeling
+    if session['token']:
     tweets = api.user_timeline(screen_name=session['username'], count=200) # max count
     tweet_replies = []
     
