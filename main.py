@@ -1,33 +1,10 @@
 from flask import render_template, Flask, redirect, request
 from google.cloud import datastore
-# from util.hash import random_salt, hash_pbkdf2
-# from util.functions import alreadyExist
-# import tweepy
+from util.hash import random_salt, hash_pbkdf2
+from util.functions import alreadyExist
+import tweepy
 
 datastore_client = datastore.Client('twitterdashboard')
-
-from hashlib import pbkdf2_hmac
-from random import getrandbits
-
-# Just Added!!!
-
-
-def alreadyExist(username):
-    datastore_client = datastore.Client('twitterdashboard')
-    key = datastore_client.key('Userfile', username)
-    if not key:
-        return False
-    else:
-        return True
-
-
-def random_salt():
-    return getrandbits(128).to_bytes(16, byteorder='little').hex()
-
-
-def hash_pbkdf2(x, salt):
-    return pbkdf2_hmac('sha256', x.encode('utf-8'), bytes.fromhex(salt), 100000).hex()
-# Just Added!!!
 
 
 def store_user_profile(username, password):
@@ -100,42 +77,47 @@ def register():
     if request.method == 'POST':
         username = request.form.get("username")
         password = request.form.get("password")
-        # if alreadyExist(username):
-        #     error = "Ooops! The username has already exit, please use another!"
-        print(username, password)
-        print(type(username), type(password))
-        store_user_profile(str(username), str(password))
+        rePassword = request.form.get("password-repeat")
+        if username and password:
+            if password != rePassword:
+                error = "Make sure the passwords match with each other."
+            if alreadyExist(username):
+                error = "Ooops! The username has already exit, please use another!"
+            print(username, password)
+            print(type(username), type(password))
+            store_user_profile(str(username), str(password))
     return render_template('register.html', error=error)
     # return redirect('/auth')
 
 
-# @app.errorhandler(404)
-# def not_found(e):
-#     return render_template('custom_page.html'), 404
-
-# @app.route("/auth", methods=['POST', 'GET'])
-# def auth():
-#     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback_uri)
-#     redirect_url = auth.get_authorization_url()
-#     print(redirect_url)
-#     print(auth.request_token)
-#     session['request_token'] = auth.request_token
-
-#     return redirect(redirect_url)
+@app.errorhandler(404)
+def not_found(e):
+    return render_template('custom_page.html'), 404
 
 
-# @app.route("/callback",methods=['POST','GET'])
-# def callback():
-#     request_token = session['request_token']
-#     del session['request_token']
-#     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback_uri)
-#     auth.request_token = request_token
-#     verifier = request.args.get('oauth_verifier')
-#     auth.get_access_token(verifier)
-#     session['token'] = (auth.access_token, auth.access_token_secret)
-#     print(auth.access_token, auth.access_token_secret)
+@app.route("/auth", methods=['POST', 'GET'])
+def auth():
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback_uri)
+    redirect_url = auth.get_authorization_url()
+    print(redirect_url)
+    print(auth.request_token)
+    session['request_token'] = auth.request_token
 
-#     return redirect('/index')
+    return redirect(redirect_url)
+
+
+@app.route("/callback",methods=['POST','GET'])
+def callback():
+    request_token = session['request_token']
+    del session['request_token']
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback_uri)
+    auth.request_token = request_token
+    verifier = request.args.get('oauth_verifier')
+    auth.get_access_token(verifier)
+    session['token'] = (auth.access_token, auth.access_token_secret)
+    print(auth.access_token, auth.access_token_secret)
+
+    return redirect('/index')
 
 
 if __name__ == '__main__':
