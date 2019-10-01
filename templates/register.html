@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
       <meta charset="UTF-8">
-      <title>Login</title>
+      <title>Register</title>
   </head>
   <body>
       <h2>Please Register</h2>
-     <form action='{{ url_for('.index') }}' method="POST">
+     <form method="POST">
          <table>
              <tr>
                  <td>Username:</td>
@@ -17,7 +17,7 @@
                  <td><input type="password" name='password' placeholder="Password"></td>
              </tr>
              <tr>
-                 <td>Password:</td>
+                 <td>Confirm Password:</td>
                  <td><input type="password" name='password-repeat' placeholder="Repeat Password"></td>
              </tr>
              <tr>

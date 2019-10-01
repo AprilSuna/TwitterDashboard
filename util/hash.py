@@ -1,4 +1,4 @@
-from hashlib import sha256, pbkdf2_hmac
+from hashlib import pbkdf2_hmac
 from random import getrandbits
 
 def random_salt():
