@@ -9,7 +9,7 @@ from util.StreamListener import StreamListener
 datastore_client = datastore.Client('twitterdashboard')
 
 
-def store_user_profile(username, password):
+def store_user_profile(username, password, access_token, access_token_secret):
     kind = 'user_file'
     name = username
     task_key = datastore_client.key(kind, name)
@@ -19,6 +19,8 @@ def store_user_profile(username, password):
     entity['username'] = username
     entity['saltedPw'] = saltedPw
     entity['salt'] = salt
+    entity['access_token'] = access_token
+    entity['access_token_secret'] = access_token_secret
     datastore_client.put(entity)
     print('Saved {}: {}'.format(entity.key.name, entity['saltedPw']))
 
@@ -85,7 +87,7 @@ def register():
             if alreadyExist(session['username']):
                 error = "Ooops! The username has already exit, please use another!"
                 loaded = False
-            store_user_profile(session['username'], session['password'])
+            # store_user_profile(session['username'], session['password'])
     if loaded:
         return redirect('/auth')
     else:
@@ -118,7 +120,7 @@ def callback():
     session['token'] = (auth.access_token, auth.access_token_secret)
     logging.info(auth.access_token, auth.access_token_secret)
 
-    # save access_token, access_token_secret to datastore for reuse
+    store_user_profile(session['username'], session['password'], auth.access_token, auth.access_token_secret)
 
     return redirect('/app')
 
