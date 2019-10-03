@@ -1,8 +1,9 @@
-from flask import render_template, Flask, redirect, request
+from flask import render_template, Flask, redirect, request, session
 from google.cloud import datastore
 from util.hash import random_salt, hash_pbkdf2
 from util.functions import alreadyExist
 import tweepy
+import logging
 from util.StreamListener import StreamListener
 
 datastore_client = datastore.Client('twitterdashboard')
@@ -45,41 +46,50 @@ def index():
 
 @app.route("/login", methods=['POST', 'GET'])
 def login():
-    # should redirect to app if it's not user's first visit
-    # get stored username and password from datastore
     error = None
+    loaded = False
     if request.method == 'POST':
         session['username'] = request.form.get("username")
         session['password'] = request.form.get("password")
-        if session['username'] and session['password']:
+        if len(session['username']) != 0:
+            loaded = True
             key = datastore_client.key("user_file", session['username'])
             entity = datastore_client.get(key)
             if not entity:
                 print("No username found")
                 error = 'Invalid username'
+                loaded = False
             elif entity["saltedPw"] != hash_pbkdf2(session['password'], entity['saltedPw']):
                 print("Please use make sure your password is correct!")
                 error = 'Invalid password'
-    return redirect('/app', error=error)
+                loaded = False
+    if loaded:
+        return redirect('/app')
+    else:
+        return render_template('login.html', error=error)
 
 
 @app.route("/register", methods=['POST', 'GET'])
 def register():
-	error = None
+    error = None
+    loaded = False
     if request.method == 'POST':
         session['username'] = request.form.get('username')
         session['password'] = request.form.get('password')
         rePassword = request.form.get("password-repeat")
-        if session['username'] and session['password']:
+        if len(session['username']) != 0:
+            loaded = True
             if session['password'] != rePassword:
                 error = "Make sure the passwords match with each other."
+                loaded = False
             if alreadyExist(session['username']):
                 error = "Ooops! The username has already exit, please use another!"
-                return render_template('register.html', error=error)
+                loaded = False
             store_user_profile(session['username'], session['password'])
-    # return render_template('register.html', error=error)
-    return redirect('/auth', error=error)
-
+    if loaded:
+        return redirect('/auth')
+    else:
+        return render_template('register.html', error=error)
 
 
 @app.route("/auth", methods=['POST', 'GET'])
@@ -118,7 +128,7 @@ def get_tweets():
     # user's first visit to our service
     # redirected from auth
     # get tokens directly from session 
-    print(request.referrer)
+    # print(request.referrer)
     # if request.referrer == 'auth':
     if session['token']:
         token, token_secret = session['token']
@@ -132,32 +142,32 @@ def get_tweets():
 
     # set up streaming api
     # using username as screen_name, have to ensure they are the same!!
-    if not session['token']:
-        print('start streaming')
-        stream = tweepy.Stream(auth=api.auth, listener=StreamListener())
-        user = api.get_user(screen_name=screen_name)
-        stream.filter(follow=[user.id_str], is_async=True)
+    # if not session['token']:
+        # print('test streaming')
+        # stream = tweepy.Stream(auth=api.auth, listener=StreamListener())
+        # # user = api.get_user(screen_name=screen_name)
+        # user = api.get_user(screen_name=session['username'])
+        # stream.filter(follow=[user.id_str], is_async=True)
 
-        # save to datastore
-        # change in StreamListener class
+        # # save to datastore
+        # # change in StreamListener class
 
     # search api
     # get initial tweets for labeling
     if session['token']:
-    	print('first time user')
-	    tweets = api.user_timeline(screen_name=session['username'], count=200) # max count
-	    tweet_replies = []
-	    
-	    for tweet in tweets:
-	        tmp = {}
-	        tmp['tid'] = tweet.id
-	        tmp['context'] = tweet.text
-	        tmp['hashtag'] = tweet.entities['hashtags']
-	        tmp['reply'] = []
-	        for reply in tweepy.Cursor(api.search, q=session['username'], since_id=tweet.id_str, result_type="mixed", count=10).items(10):
-	            tmp['reply'].append({'uid': reply.user.id, 'uname': reply.user.name, 'reply': reply.text})
-	            tweet_replies.append(tmp)
-	    print(tweets)
+        print('first time user')
+        tweets = api.user_timeline(screen_name=session['username'], count=200) # max count
+        tweet_replies = []
+        for tweet in tweets:
+            tmp = {}
+            tmp['tid'] = tweet.id
+            tmp['context'] = tweet.text
+            tmp['hashtag'] = tweet.entities['hashtags']
+            tmp['reply'] = []
+            for reply in tweepy.Cursor(api.search, q=session['username'], since_id=tweet.id_str, result_type="mixed", count=10).items(10):
+                tmp['reply'].append({'uid': reply.user.id, 'uname': reply.user.name, 'reply': reply.text})
+                tweet_replies.append(tmp)
+        print(tweets)
 
     # save to db and display for labeling
 
