@@ -1,3 +1,4 @@
+import tweepy
 class StreamListener(tweepy.StreamListener):
     def on_status(self, status):
         id_str = status.id_str

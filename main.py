@@ -1,26 +1,10 @@
-from flask import render_template, Flask, redirect, request
+from flask import render_template, Flask, redirect, request, session
 from google.cloud import datastore
-from util.hash import random_salt, hash_pbkdf2
-from util.functions import alreadyExist
+from util.functions import alreadyExist, store_user_profile
 import tweepy
 from util.StreamListener import StreamListener
 
 datastore_client = datastore.Client('twitterdashboard')
-
-
-def store_user_profile(username, password):
-    kind = 'user_file'
-    name = username
-    task_key = datastore_client.key(kind, name)
-    entity = datastore.Entity(key=task_key)
-    salt = random_salt()
-    saltedPw = hash_pbkdf2(password, salt)
-    entity['username'] = username
-    entity['saltedPw'] = saltedPw
-    entity['salt'] = salt
-    datastore_client.put(entity)
-    print('Saved {}: {}'.format(entity.key.name, entity['saltedPw']))
-
 
 app = Flask(__name__)
 app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
@@ -45,40 +29,50 @@ def index():
 
 @app.route("/login", methods=['POST', 'GET'])
 def login():
-    # should redirect to app if it's not user's first visit
-    # get stored username and password from datastore
     error = None
+    loaded = False
     if request.method == 'POST':
         session['username'] = request.form.get("username")
         session['password'] = request.form.get("password")
-        if session['username'] and session['password']:
+        if len(session['username']) != 0:
+            loaded = True
             key = datastore_client.key("user_file", session['username'])
             entity = datastore_client.get(key)
             if not entity:
                 print("No username found")
                 error = 'Invalid username'
+                loaded = False
             elif entity["saltedPw"] != hash_pbkdf2(session['password'], entity['saltedPw']):
                 print("Please use make sure your password is correct!")
                 error = 'Invalid password'
-    return redirect('/app', error=error)
+                loaded = False
+    if loaded:
+        return redirect('/app')
+    else:
+        return render_template('login.html', error=error)
 
 
 @app.route("/register", methods=['POST', 'GET'])
 def register():
-	error = None
+    error = None
+    loaded = False
     if request.method == 'POST':
         session['username'] = request.form.get('username')
         session['password'] = request.form.get('password')
         rePassword = request.form.get("password-repeat")
-        if session['username'] and session['password']:
+        if len(session['username']) != 0:
+            loaded = True
             if session['password'] != rePassword:
                 error = "Make sure the passwords match with each other."
-            if alreadyExist(session['username']):
-                error = "Ooops! The username has already exit, please use another!"
-                return render_template('register.html', error=error)
-            store_user_profile(session['username'], session['password'])
-    # return render_template('register.html', error=error)
-    return redirect('/auth', error=error)
+                loaded = False
+            if alreadyExist(datastore_client, session['username']):
+                error = "Ooops! The username has already exist, please use another!"
+                loaded = False
+            # store_user_profile(datastore_client, session['username'], session['password'])
+    if loaded:
+        return redirect('/auth')
+    else:
+        return render_template('register.html', error=error)
 
 
 
@@ -109,6 +103,7 @@ def callback():
     logging.info(auth.access_token, auth.access_token_secret)
 
     # save access_token, access_token_secret to datastore for reuse
+    store_user_profile(datastore_client, session['username'], session['password'], auth.access_token, auth.access_token_secret)
 
     return redirect('/app')
 
@@ -135,7 +130,7 @@ def get_tweets():
     if not session['token']:
         print('start streaming')
         stream = tweepy.Stream(auth=api.auth, listener=StreamListener())
-        user = api.get_user(screen_name=screen_name)
+        user = api.get_user(screen_name=session['username'])
         stream.filter(follow=[user.id_str], is_async=True)
 
         # save to datastore
