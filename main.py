@@ -139,20 +139,20 @@ def get_tweets():
     # search api
     # get initial tweets for labeling
     if session['token']:
-    	print('first time user')
-	    tweets = api.user_timeline(screen_name=session['username'], count=200) # max count
-	    tweet_replies = []
-	    
-	    for tweet in tweets:
-	        tmp = {}
-	        tmp['tid'] = tweet.id
-	        tmp['context'] = tweet.text
-	        tmp['hashtag'] = tweet.entities['hashtags']
-	        tmp['reply'] = []
-	        for reply in tweepy.Cursor(api.search, q=session['username'], since_id=tweet.id_str, result_type="mixed", count=10).items(10):
-	            tmp['reply'].append({'uid': reply.user.id, 'uname': reply.user.name, 'reply': reply.text})
-	            tweet_replies.append(tmp)
-	    print(tweets)
+        print('first time user')
+        tweets = api.user_timeline(screen_name=session['username'], count=200) # max count
+        tweet_replies = []
+        
+        for tweet in tweets:
+            tmp = {}
+            tmp['tid'] = tweet.id
+            tmp['context'] = tweet.text
+            tmp['hashtag'] = tweet.entities['hashtags']
+            tmp['reply'] = []
+            for reply in tweepy.Cursor(api.search, q=session['username'], since_id=tweet.id_str, result_type="mixed", count=10).items(10):
+                tmp['reply'].append({'uid': reply.user.id, 'uname': reply.user.name, 'reply': reply.text})
+                tweet_replies.append(tmp)
+        print(tweets)
 
     # save to db and display for labeling
 
