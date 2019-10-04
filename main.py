@@ -1,7 +1,7 @@
 from flask import render_template, Flask, redirect, request, session
 from google.cloud import datastore
-from util.functions import alreadyExist, store_user_profile
-import tweepy
+from util.functions import alreadyExist, store_user_profile, random_salt, hash_pbkdf2
+import tweepy, logging
 from util.StreamListener import StreamListener
 
 datastore_client = datastore.Client('twitterdashboard')
@@ -42,7 +42,7 @@ def login():
                 print("No username found")
                 error = 'Invalid username'
                 loaded = False
-            elif entity["saltedPw"] != hash_pbkdf2(session['password'], entity['saltedPw']):
+            elif entity["saltedPw"] != hash_pbkdf2(session['password'], entity['salt']):
                 print("Please use make sure your password is correct!")
                 error = 'Invalid password'
                 loaded = False
@@ -113,7 +113,7 @@ def get_tweets():
     # user's first visit to our service
     # redirected from auth
     # get tokens directly from session 
-    print(request.referrer)
+    # print(request.referrer)
     # if request.referrer == 'auth':
     if session['token']:
         token, token_secret = session['token']
@@ -139,8 +139,8 @@ def get_tweets():
     # search api
     # get initial tweets for labeling
     if session['token']:
-        print('first time user')
-        tweets = api.user_timeline(screen_name=session['username'], count=200) # max count
+        print('first time user:', session['username'])
+        tweets = api.user_timeline(screen_name=session['username'], count=10) # max count = 200
         tweet_replies = []
         
         for tweet in tweets:
@@ -152,7 +152,8 @@ def get_tweets():
             for reply in tweepy.Cursor(api.search, q=session['username'], since_id=tweet.id_str, result_type="mixed", count=10).items(10):
                 tmp['reply'].append({'uid': reply.user.id, 'uname': reply.user.name, 'reply': reply.text})
                 tweet_replies.append(tmp)
-        print(tweets)
+        # print(tweets)
+        print(tweet_replies)
 
     # save to db and display for labeling
 
