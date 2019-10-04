@@ -5,7 +5,7 @@
       <title>Login</title>
   </head>
   <body>
-      <h2>Please Login</h2>
+     <h2>Please Login</h2>
      <form method="POST">
          <table>
              <tr>
@@ -21,6 +21,8 @@
              </tr>
          </table>
      </form>
+     <p>Haven't registered yet? Please register here</p>
+     <button type="button" onclick="window.location.href='{{ url_for( 'register') }}'; ">Register</button>
      {% if error %}
         <p class="error"><strong>Error:</strong> {{ error }}
      {% endif %}

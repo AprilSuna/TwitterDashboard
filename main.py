@@ -1,29 +1,12 @@
 from flask import render_template, Flask, redirect, request, session
 from google.cloud import datastore
 from util.hash import random_salt, hash_pbkdf2
-from util.functions import alreadyExist
+from util.functions import alreadyExist, store_user_profile
 import tweepy
 import logging
 from util.StreamListener import StreamListener
 
 datastore_client = datastore.Client('twitterdashboard')
-
-
-def store_user_profile(username, password, access_token, access_token_secret):
-    kind = 'user_file'
-    name = username
-    task_key = datastore_client.key(kind, name)
-    entity = datastore.Entity(key=task_key)
-    salt = random_salt()
-    saltedPw = hash_pbkdf2(password, salt)
-    entity['username'] = username
-    entity['saltedPw'] = saltedPw
-    entity['salt'] = salt
-    entity['access_token'] = access_token
-    entity['access_token_secret'] = access_token_secret
-    datastore_client.put(entity)
-    print('Saved {}: {}'.format(entity.key.name, entity['saltedPw']))
-
 
 app = Flask(__name__)
 app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
@@ -57,6 +40,7 @@ def login():
             loaded = True
             key = datastore_client.key("user_file", session['username'])
             entity = datastore_client.get(key)
+            print(entity)
             if not entity:
                 print("No username found")
                 error = 'Invalid username'
@@ -84,10 +68,10 @@ def register():
             if session['password'] != rePassword:
                 error = "Make sure the passwords match with each other."
                 loaded = False
-            if alreadyExist(session['username']):
-                error = "Ooops! The username has already exit, please use another!"
+            if alreadyExist(datastore_client, session['username']):
+                error = "Ooops! The username has already exist, please use another!"
                 loaded = False
-            # store_user_profile(session['username'], session['password'])
+            # store_user_profile(datastore_client, session['username'], session['password'])
     if loaded:
         return redirect('/auth')
     else:
@@ -120,7 +104,7 @@ def callback():
     session['token'] = (auth.access_token, auth.access_token_secret)
     logging.info(auth.access_token, auth.access_token_secret)
 
-    store_user_profile(session['username'], session['password'], auth.access_token, auth.access_token_secret)
+    store_user_profile(datastore_client, session['username'], session['password'], auth.access_token, auth.access_token_secret)
 
     return redirect('/app')
 

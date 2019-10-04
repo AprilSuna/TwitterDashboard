@@ -5,10 +5,11 @@
 	{%else%}
 	<title> TwitterDashboard </title>
 	{% endif %} 
-	<h1> Hello Twitter Users! Welcome to our dash board </h1>
+	<h1> Hello Cornell Tech Users! Welcome to our dash board </h1>
 	<form action='{{ url_for('.login') }}' method="POST">
 		<tr>
-			<td><input type="submit" value="Login"></td>
+			<!-- <td><input type="submit" value="Login"></td> -->
+            <td><button type="button" onclick="window.location.href='{{ url_for( 'login') }}'; ">Login</button></td>
 		</tr>
 	</form>
 	<form action='{{ url_for('.register') }}' method="POST">
