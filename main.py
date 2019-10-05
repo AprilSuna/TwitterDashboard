@@ -73,7 +73,7 @@ def register():
         return redirect('/auth')
     else:
         return render_template('register.html', error=error)
-        
+
 
 @app.route("/auth", methods=['POST', 'GET'])
 def auth():
@@ -127,16 +127,19 @@ def get_tweets(): # old version in StreamListener
     tweets = api.user_timeline(screen_name=session['username'], count=10) # max count = 200
     for tweet in tweets:
         for reply in tweepy.Cursor(api.search, q=session['username'], since_id=tweet.id_str, result_type="mixed", count=10).items(10):
-            store_tweets(datastore_client, session['username'], 
-                        context_id=tweet.id, 
-                        context=tweet.text, 
-                        context_hastags=tweet.entities['hashtags'], 
-                        reply_user_id=reply.user.id, 
-                        reply_user_name=reply.user.name, 
-                        text=reply.text)
-    # display and label
-
-    return redirect('/dash')
+            if reply.in_reply_to_status_id_str == tweet.id:
+                store_tweets(datastore_client, tweet.id, 
+                            reply_to_id=tweet.user.id_str
+                            reply_to_screen_name=session['username'], 
+                            context=tweet.text, 
+                            context_hastags=tweet.entities['hashtags'], 
+                            reply_user_id=reply.user.id, 
+                            reply_user_name=reply.user.name, 
+                            text=reply.text)
+    # display for label
+    return render_template('app.html')
+    # after labeling
+    # return redirect('/dash')
 
 @app.route("/dash")
 def dash():
