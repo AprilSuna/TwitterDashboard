@@ -31,7 +31,7 @@ def random_salt():
 def hash_pbkdf2(x, salt):
     return pbkdf2_hmac('sha256', x.encode('utf-8'), bytes.fromhex(salt), 100000).hex()
 
-def store_tweets(client, reply_to_id, reply_to_name, context_id, context, context_hashtags, reply_id, reply_user_id, reply_user_name, text):
+def store_tweets(client, context_id, reply_to_id, reply_to_name, context, context_hashtags, reply_id, reply_user_id, reply_user_name, text):
     kind = 'tweets'
     name = context_id
     task_key = client.key(kind, name)
