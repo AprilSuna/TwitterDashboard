@@ -138,9 +138,9 @@ def get_tweets(): # old version in StreamListener
                         reply_user_name=reply.user.screen_name, 
                         text=reply.text)
     # display for label
-    return render_template('app.html')
+    # return render_template('app.html')
     # after labeling
-    # return redirect('/dash')
+    return redirect('/dash')
 
 @app.route("/dash")
 def dash():
