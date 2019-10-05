@@ -132,7 +132,7 @@ def get_tweets(): # old version in StreamListener
                             reply_to_id=tweet.user.id_str
                             reply_to_screen_name=session['username'], 
                             context=tweet.text, 
-                            context_hastags=tweet.entities['hashtags'], 
+                            context_hashtags=tweet.entities['hashtags'], 
                             reply_user_id=reply.user.id, 
                             reply_user_name=reply.user.name, 
                             text=reply.text)
