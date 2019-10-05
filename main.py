@@ -1,6 +1,6 @@
 from flask import render_template, Flask, redirect, request, session
 from google.cloud import datastore
-from util.functions import alreadyExist, store_user_profile, random_salt, hash_pbkdf2
+from util.functions import alreadyExist, store_user_profile, random_salt, hash_pbkdf2, store_tweets
 import tweepy, logging
 from util.StreamListener import StreamListener
 
@@ -47,7 +47,7 @@ def login():
                 error = 'Invalid password'
                 loaded = False
     if loaded:
-        return redirect('/app')
+        return redirect('/dash')
     else:
         return render_template('login.html', error=error)
 
@@ -73,8 +73,7 @@ def register():
         return redirect('/auth')
     else:
         return render_template('register.html', error=error)
-
-
+        
 
 @app.route("/auth", methods=['POST', 'GET'])
 def auth():
@@ -109,55 +108,39 @@ def callback():
 
 
 @app.route('/app') # rate limit, might use stream api
-def get_tweets():
-    # user's first visit to our service
-    # redirected from auth
-    # get tokens directly from session 
-    # print(request.referrer)
-    # if request.referrer == 'auth':
-    if session['token']:
-        token, token_secret = session['token']
-    else:
-        # query tokens from datastore with session username and password
-        print('db needed')
+def get_tweets(): # old version in StreamListener
+    token, token_secret = session['token']
 
+    # set up search api
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
     auth.set_access_token(token, token_secret)
     api = tweepy.API(auth)
 
-    # set up streaming api
-    # using username as screen_name, have to ensure they are the same!!
-    if not session['token']:
-        print('start streaming')
-        stream = tweepy.Stream(auth=api.auth, listener=StreamListener())
-        user = api.get_user(screen_name=session['username'])
-        stream.filter(follow=[user.id_str], is_async=True)
+    # set up streaming api with new thread
+    print('start streaming for', session['username'])
+    stream = tweepy.Stream(auth=api.auth, listener=StreamListener())
+    user = api.get_user(screen_name=session['username'])
+    stream.filter(follow=[user.id_str], is_async=True)
 
-        # save to datastore
-        # change in StreamListener class
+    # scrape initial set of tweets
+    # only select tweets that have replies (would be hard for testing)
+    tweets = api.user_timeline(screen_name=session['username'], count=10) # max count = 200
+    for tweet in tweets:
+        for reply in tweepy.Cursor(api.search, q=session['username'], since_id=tweet.id_str, result_type="mixed", count=10).items(10):
+            store_tweets(datastore_client, session['username'], 
+                        context_id=tweet.id, 
+                        context=tweet.text, 
+                        context_hastags=tweet.entities['hashtags'], 
+                        reply_user_id=reply.user.id, 
+                        reply_user_name=reply.user.name, 
+                        text=reply.text)
+    # display and label
 
-    # search api
-    # get initial tweets for labeling
-    if session['token']:
-        print('first time user:', session['username'])
-        tweets = api.user_timeline(screen_name=session['username'], count=10) # max count = 200
-        tweet_replies = []
-        
-        for tweet in tweets:
-            tmp = {}
-            tmp['tid'] = tweet.id
-            tmp['context'] = tweet.text
-            tmp['hashtag'] = tweet.entities['hashtags']
-            tmp['reply'] = []
-            for reply in tweepy.Cursor(api.search, q=session['username'], since_id=tweet.id_str, result_type="mixed", count=10).items(10):
-                tmp['reply'].append({'uid': reply.user.id, 'uname': reply.user.name, 'reply': reply.text})
-                tweet_replies.append(tmp)
-        # print(tweets)
-        print(tweet_replies)
+    return redirect('/dash')
 
-    # save to db and display for labeling
-
-    return render_template('app.html')
+@app.route("/dash")
+def dash():
+    return render_template('dash.html')
 
 
 if __name__ == '__main__':
