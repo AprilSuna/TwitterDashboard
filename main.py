@@ -127,14 +127,15 @@ def get_tweets(): # old version in StreamListener
     tweets = api.user_timeline(screen_name=session['username'], count=10) # max count = 200
     for tweet in tweets:
         for reply in tweepy.Cursor(api.search, q=session['username'], since_id=tweet.id_str, result_type="mixed", count=10).items(10):
-            if reply.in_reply_to_status_id_str == tweet.id:
-                store_tweets(datastore_client, tweet.id, 
+            if reply.in_reply_to_status_id_str == tweet.id_str:
+                store_tweets(datastore_client, tweet.id_str, 
                             reply_to_id=tweet.user.id_str
-                            reply_to_screen_name=session['username'], 
+                            reply_to_name=session['username'], 
                             context=tweet.text, 
                             context_hashtags=tweet.entities['hashtags'], 
-                            reply_user_id=reply.user.id, 
-                            reply_user_name=reply.user.name, 
+                            reply_id=reply.id_str,
+                            reply_user_id=reply.user.id_str, 
+                            reply_user_name=reply.user.screen_name, 
                             text=reply.text)
     # display for label
     return render_template('app.html')

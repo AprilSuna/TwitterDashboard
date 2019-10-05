@@ -31,14 +31,16 @@ def random_salt():
 def hash_pbkdf2(x, salt):
     return pbkdf2_hmac('sha256', x.encode('utf-8'), bytes.fromhex(salt), 100000).hex()
 
-def store_tweets(client, reply_to_id, reply_to_screen_name, context_id, context, context_hashtags, reply_user_id, reply_user_name, text):
+def store_tweets(client, reply_to_id, reply_to_name, context_id, context, context_hashtags, reply_id, reply_user_id, reply_user_name, text):
     kind = 'tweets'
     name = context_id
     task_key = client.key(kind, name)
     entity = datastore.Entity(key=task_key)
-    entity['reply_to_screen_name'] = reply_to_screen_name
+    entity['reply_to_id'] = reply_to_id
+    entity['reply_to_name'] = reply_to_name
     entity['context'] = context
     entity['context_hashtags'] = context_hashtags
+    entity['reply_id'] = reply_id
     entity['reply_user_id'] = reply_user_id
     entity['reply_user_name'] = reply_user_name
     entity['text'] = text
