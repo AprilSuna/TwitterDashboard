@@ -1,4 +1,62 @@
+<!DOCTYPE html>
 <html>
+<head>
+    <title>Self-label Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mainStyle.css') }}">
+</head>
+
+<h2>Self-label Dashboard</h2>
+<table class="bordered">
+    <thead>
+
+    <tr>
+        <th>#</th>        
+        <th>Tweet</th>
+        <th>Reply</th>
+        <th>Contains Harassment</th>
+        <th>Directed to me</th>
+    </tr>
+    </thead>
+    <ol>
+        {%for i in range(0, len)%}
+            <tr>
+            <td width="2%">{{i}}</td>
+            <td width="40%">
+                {{result[i]['context']}}
+            </td>
+            <td width="40%">
+                {{result[i]['reply']['reply']}}
+            </td>
+            <td width="8%">
+                <div class="radio">
+                    <label><input type="radio" id="Harassment" name="optradioH"+i value="0">Yes</label>
+                </div>
+                <div class="radio">
+                    <label><input type="radio" id="Harassment" name="optradioH"+i value="1">No</label>
+                </div>
+                <div class="radio">
+                    <label><input type="radio" id="Harassment" name="optradioH"+i value="2">Not Sure</label>
+                </div>
+            </td>
+            <td width="8%">
+                <div class="radio">
+                    <label><input type="radio" id="Directed" name="optradioD"+i value="0">Yes</label>
+                </div>
+                <div class="radio">
+                    <label><input type="radio" id="Directed" name="optradioD"+i value="1">No</label>
+                </div>
+                <div class="radio">
+                    <label><input type="radio" id="Directed" name="optradioD"+i value="2">Not Sure</label>
+                </div>
+            </td>
+            </tr>   
+        {%endfor%}
+  
+    </ol>  
+
+</table>
+
+<!-- <html>
 <head>
 	{%if title%}
 	<title> {{ title }}</title>
@@ -6,5 +64,6 @@
 	<title> TwitterDashboard</title>
 	{% endif %} 
 	<h1> Generating your dashboard... Please wait</h1>
-</head>  
+</head>   -->
+
 </html>

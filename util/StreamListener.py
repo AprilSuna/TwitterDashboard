@@ -16,8 +16,9 @@ class StreamListener(tweepy.StreamListener):
         if in_reply_to_user_id_str is not None:
             is_reply = True
             print('is_reply')
-            muted_user = api.create_mute(user_id_str)
+            # muted_user = api.create_mute(user_id_str)
             print('muted', user_id_str)
+#         print(id_str, text)
         print(status.text)
 
 

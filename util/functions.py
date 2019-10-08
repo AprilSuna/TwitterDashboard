@@ -10,6 +10,7 @@ def alreadyExist(client, username):
     else:
         return True
 
+      
 def store_user_profile(client, username, password, access_token, access_token_secret):
     kind = 'user_file'
     name = username
