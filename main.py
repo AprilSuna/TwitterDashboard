@@ -26,7 +26,16 @@ access_token_url = 'https://api.twitter.com/oauth/access_token'
 @app.route('/', methods=['POST', 'GET'])
 def index():
     title = 'TwitterDashboardHomePage'
-    return render_template('index.html')
+    # return render_template('index.html')
+    tweet_replies = [
+        {'tid': 1181568448004050951, 
+        'context': 'As President, I leaned on @AmbassadorRice’s experience, expertise, and willingness to tell me what I needed to hear… https://t.co/oWx2obfDF5', 'hashtag': [], 
+        'reply': {'uid': 1174477973879238657, 'uname': 'mpy', 'reply': '@BarackObama \nObama still control mainstream media and many federal government agencies. the media is party of the… https://t.co/dZsNVllSfW'}}, 
+        {'tid': 1181568448004050951, 'context': 'As President, I leaned on @AmbassadorRice’s experience, expertise, and willingness to tell me what I needed to hear… https://t.co/oWx2obfDF5', 'hashtag': [], 
+        'reply': {'uid': 51639017, 'uname': 'Valerie Cartwright',
+         'reply': 'RT @ReasePaino: @BarackObama @AmbassadorRice https://t.co/NjZFQ2HD0Y'}}
+        ]
+    return render_template('dash.html', len = len(tweet_replies), result = tweet_replies)
 
 
 @app.route("/login", methods=['POST', 'GET'])
