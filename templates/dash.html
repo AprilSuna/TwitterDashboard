@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Self-label Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mainStyle.css') }}">
+</head>
+
+<h2>Self-label Dashboard</h2>
+<table class="bordered">
+    <thead>
+
+    <tr>
+        <th>#</th>        
+        <th>Tweet</th>
+        <th>Reply</th>
+        <th>Contains Harassment</th>
+        <th>Directed to me</th>
+    </tr>
+    </thead>
+    <ol>
+        {%for i in range(5)%}
+            <tr>
+            <td width="4%">{{i}}</td>
+            <td width="40%">
+                Like the Beatles said: It’s getting better all the time. Thanks, babe, for 27 amazing years!
+            </td>
+            <td width="40%">
+                We miss you. Thank you for your service. We need you though. Donald Trump needs you to put him in his place. Doesn’t have to be in Public. Can be on twitter alone. Your presidency doesn’t end when you’re out of office
+            </td>
+            <td width="7%">
+                <div class="radio">
+                    <label><input type="radio" id='Harassment' name="optradioH">Yes</label>
+                </div>
+                <div class="radio">
+                    <label><input type="radio" id='Harassment' name="optradioH">No</label>
+                </div>
+                <div class="radio">
+                    <label><input type="radio" id='Harassment' name="optradioH">Not Sure</label>
+                </div>
+            </td>
+            <td width="7%">
+                <div class="radio">
+                    <label><input type="radio" id='Directed' name="optradioD">Yes</label>
+                </div>
+                <div class="radio">
+                    <label><input type="radio" id='Directed' name="optradioD">No</label>
+                </div>
+                <div class="radio">
+                    <label><input type="radio" id='Directed' name="optradioD">Not Sure</label>
+                </div>
+            </td>
+            </tr>   
+        {%endfor%}
+  
+    </ol>  
+
+</table>
+
+</html>

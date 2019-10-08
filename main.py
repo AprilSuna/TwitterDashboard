@@ -26,7 +26,7 @@ access_token_url = 'https://api.twitter.com/oauth/access_token'
 @app.route('/', methods=['POST', 'GET'])
 def index():
     title = 'TwitterDashboardHomePage'
-    return render_template('index.html', title=title)
+    return render_template('dash.html', title=title)
 
 
 @app.route("/login", methods=['POST', 'GET'])
