@@ -26,7 +26,7 @@ access_token_url = 'https://api.twitter.com/oauth/access_token'
 @app.route('/', methods=['POST', 'GET'])
 def index():
     title = 'TwitterDashboardHomePage'
-    return render_template('dash.html', title=title)
+    return render_template('index.html')
 
 
 @app.route("/login", methods=['POST', 'GET'])
@@ -142,7 +142,7 @@ def get_tweets():
     # get initial tweets for labeling
     if session['token']:
         print('first time user')
-        tweets = api.user_timeline(screen_name=session['username'], count=200) # max count
+        tweets = api.user_timeline(screen_name=session['username'], count=10) # max count
         tweet_replies = []
         for tweet in tweets:
             tmp = {}
@@ -150,14 +150,13 @@ def get_tweets():
             tmp['context'] = tweet.text
             tmp['hashtag'] = tweet.entities['hashtags']
             tmp['reply'] = []
-            for reply in tweepy.Cursor(api.search, q=session['username'], since_id=tweet.id_str, result_type="mixed", count=10).items(10):
-                tmp['reply'].append({'uid': reply.user.id, 'uname': reply.user.name, 'reply': reply.text})
-                tweet_replies.append(tmp)
-        print(tweets)
+            for reply in tweepy.Cursor(api.search, q=session['username'], since_id=tweet.id_str, result_type="mixed", count=2).items(2):
+                tmp['reply']= {'uid': reply.user.id, 'uname': reply.user.name, 'reply': reply.text}
+                tweet_replies.append(tmp.copy())
+        print(tweet_replies)
 
     # save to db and display for labeling
-
-    return render_template('app.html')
+    return render_template('dash.html', len = len(result), result = tweet_replies)
 
 
 if __name__ == '__main__':
