@@ -8,7 +8,8 @@
 	<h1> Hello Twitter Users! Welcome to our dash board </h1>
 	<form action='{{ url_for('.login') }}' method="POST">
 		<tr>
-			<td><input type="submit" value="Login"></td>
+			<!-- <td><input type="submit" value="Login"></td> -->
+			<td><button type="button" onclick="window.location.href='{{ url_for( 'login') }}'; ">Login</button>
 		</tr>
 	</form>
 	<form action='{{ url_for('.register') }}' method="POST">
