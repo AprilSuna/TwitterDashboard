@@ -137,35 +137,36 @@ def get_tweets(): # old version in StreamListener
     tweet_replies = []
     for tweet in tweets:
         tmp = {}
-        tmp['tid'] = tweet.id
+        tmp['tid'] = tweet.id_str
         tmp['context'] = tweet.text
         tmp['hashtag'] = tweet.entities['hashtags']
         tmp['reply'] = []
         for reply in tweepy.Cursor(api.search, q=session['username'], since_id=tweet.id_str, result_type="mixed", count=2).items(2):
-            tmp['reply']= {'uid': reply.user.id, 'uname': reply.user.name, 'reply': reply.text}
-#           tweet_replies used for display in dash.html
-            tweet_replies.append(tmp.copy())
-#           store to database & for training
-            store_tweets(datastore_client, tweet.id_str, 
-                        reply_to_id=tweet.user.id_str,
-                        reply_to_name=session['username'], 
-                        context=tweet.text, 
-                        context_hashtags=tweet.entities['hashtags'], 
-                        reply_id=reply.id_str,
-                        reply_user_id=reply.user.id_str, 
-                        reply_user_name=reply.user.screen_name, 
-                        text=reply.text)
+            if reply.in_reply_to_status_id_str == tweet.id_str:
+                tmp['reply']= {'uid': reply.user.id_str, 'uname': reply.user.screen_name, 'reply': reply.text}
+    #           tweet_replies used for display in dash.html
+                tweet_replies.append(tmp.copy())
+    #           store to database & for training
+                store_tweets(datastore_client, tweet.id_str, 
+                            reply_to_id=tweet.user.id_str,
+                            reply_to_name=session['username'], 
+                            context=tweet.text, 
+                            context_hashtags=tweet.entities['hashtags'], 
+                            reply_id=reply.id_str,
+                            reply_user_id=reply.user.id_str, 
+                            reply_user_name=reply.user.screen_name, 
+                            text=reply.text)
     print(tweet_replies)
 
     # display for label
     # return render_template('app.html')
     # after labeling
-    return redirect('dash.html', len = len(tweet_replies), result = tweet_replies')
+    return render_template('dash.html', len = len(tweet_replies), result = tweet_replies)
 
                     
 @app.route("/dash")
 def dash():
-    return render_template('dash.html')
+    return render_template('dash.html', len=1, result = [])
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8080, debug=True)
