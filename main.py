@@ -49,12 +49,12 @@ def login():
             entity = datastore_client.get(key)
             print(entity)
             if not entity:
-                print("No username found")
-                error = 'Invalid username'
+                print('Invalid username')
+                error = "No username found"
                 loaded = False
             elif entity["saltedPw"] != hash_pbkdf2(session['password'], entity['salt']):
-                print("Please use make sure your password is correct!")
-                error = 'Invalid password'
+                print('Invalid password')
+                error = "Please use make sure your password is correct!"
                 loaded = False
     if loaded:
       return redirect('/dash')
@@ -144,9 +144,9 @@ def get_tweets(): # old version in StreamListener
         for reply in tweepy.Cursor(api.search, q=session['username'], since_id=tweet.id_str, result_type="mixed", count=2).items(2):
             if reply.in_reply_to_status_id_str == tweet.id_str:
                 tmp['reply']= {'uid': reply.user.id_str, 'uname': reply.user.screen_name, 'reply': reply.text}
-    #           tweet_replies used for display in dash.html
+                # tweet_replies used for display in dash.html
                 tweet_replies.append(tmp.copy())
-    #           store to database & for training
+                # store to database & for training
                 store_tweets(datastore_client, tweet.id_str, 
                             reply_to_id=tweet.user.id_str,
                             reply_to_name=session['username'], 
