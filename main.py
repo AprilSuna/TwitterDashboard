@@ -1,17 +1,10 @@
-from flask import render_template, Flask, redirect, request, session
-# from google.cloud import datastore
-from util.functions import random_salt, hash_pbkdf2
-# , alreadyExist, store_user_profile, store_tweets
-import tweepy, logging
+from flask import Flask, render_template, redirect, request, session
+from util.functions import *
 from util.StreamListener import StreamListener
 from googleapiclient import discovery
-from googleapiclient.errors import HttpError
+# from google.cloud import datastore
 import pandas as pd
-
-# datastore_client = datastore.Client('twitterdashboard')
-
-app = Flask(__name__)
-app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
+import tweepy, logging
 
 # kelly's tokens
 access_token = '364156861-cSyt6v8Rjg4n8aVxRqI7stklhtvv69raNR7X3Tp9'
@@ -25,12 +18,17 @@ request_token_url = 'https://api.twitter.com/oauth/request_token'
 authorization_url = 'https://api.twitter.com/oauth/authorize'
 access_token_url = 'https://api.twitter.com/oauth/access_token'
 
+# datastore_client = datastore.Client('twitterdashboard')
 service = discovery.build('commentanalyzer', 'v1alpha1', developerKey=perspective_api_key)
+app = Flask(__name__)
+app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
+
 
 @app.route('/', methods=['POST', 'GET'])
 def index():
     title = 'TwitterDashboardHomePage'
     return render_template('index.html')
+
 
 @app.route("/login", methods=['POST', 'GET'])
 def login():
@@ -112,129 +110,42 @@ def callback():
 
 
 @app.route('/app') # rate limit, might use stream api
-
-# TODO 10.17:
-# need to get previous mute list somewhere
-# reform the code to include get_tweets, get_muted, etc.
-
-def get_tweets(): # old version in StreamListener
-    token, token_secret = session['token']
-
+def app():
     # set up search api
+    token, token_secret = session['token']
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
     auth.set_access_token(token, token_secret)
     api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
 
     # set up streaming api with new thread
     print('start streaming for', session['username'])
-    stream = tweepy.Stream(auth=api.auth, listener=StreamListener())
+    stream = tweepy.Stream(auth=api.auth, listener=StreamListener(service, datastore_client))
     user = api.get_user(screen_name=session['username'])
     stream.filter(follow=[user.id_str], is_async=True)
 
-    # scrape initial set of tweets
-    # only select tweets that have replies (would be hard for testing)
-    tweets = api.user_timeline(screen_name=session['username'], count=10) # max count = 200
-    tweet_replies = []
-    for tweet in tweets:
-        tmp = {}
-        tmp['tid'] = tweet.id_str
-        tmp['context'] = tweet.text
-        tmp['hashtag'] = tweet.entities['hashtags']
-
-        for reply in tweepy.Cursor(api.search, q=session['username'], since_id=tweet.id_str, result_type="mixed").items(5):
-            if reply.in_reply_to_status_id_str == tweet.id_str:
-                # comment = {'uid': reply.user.id_str, 'uname': reply.user.screen_name, 'reply': reply.text}
-                tmp['reply_user_id'] = reply.user.id_str
-                tmp['reply_user_name'] = reply.user.screen_name
-                tmp['text'] = reply.text
-                tmp = get_perspective(tmp)
-
-                # tweet_replies used for display in dash.html
-                tweet_replies.append(tmp.copy())
-                # store to database & for training
-                # store_tweets(datastore_client, '_'.join(tweet.id_str, reply.id_str), 
-                #             reply_to_id=tweet.user.id_str,
-                #             reply_to_name=session['username'], 
-                #             context=tweet.text, 
-                #             context_hashtags=tweet.entities['hashtags'], 
-                #             reply_user_id=reply.user.id_str, 
-                #             reply_user_name=reply.user.screen_name, 
-                #             text=reply.text,
-                #             reply_hashtags=reply.entities['hashtags'],
-                #             toxicity=tmp['toxicity'],
-                #             identity_attack=tmp['identity_attack'],
-                #             insult=tmp['insult'],
-                #             profanity=tmp['profanity'],
-                #             threat=tmp['threat'],
-                #             sexually_explicit=tmp['sexually_explicit'],
-                #             flirtation=tmp['flirtation'])
-    # option 1: sample by perspective scores
-    # tweet_replies = get_samples_1(tweet_replies)
-
-    # option 2: group by reply users, threshold at 5
-    tweet_replies = get_samples_2(tweet_replies)
-    print(tweet_replies)
+    # get initial block and mute ids
+    bm_ids = set()
+    for i in api.blocks_ids():
+        bm.add(str(i))
+    for i in api.mutes_ids():
+        bm.add(str(i))
+    # store to db for further update
+    store_bm(datastore_client, user.id_str, bm_ids)
+    # scrape initial set of tweets for labeling
+    tweet_replies = get_initial_tweets(api, screen_name=session['username'], count=10, service=service)
 
     # display for label
     # return render_template('app.html')
     # after labeling
-    return render_template('dash.html', len = len(tweet_replies), result = tweet_replies)
-  
-def get_perspective(tmp):
-    analyze_request = {'comment': {'text': tmp['text']},
-                        'requestedAttributes': {'TOXICITY': {}, 
-                        'IDENTITY_ATTACK':{}, 
-                        'INSULT':{}, 
-                        'PROFANITY':{}, 
-                        'THREAT':{}, 
-                        'SEXUALLY_EXPLICIT':{}, 
-                        'FLIRTATION':{}}}
-    one_more_time = True # flag if need to sleep before getting the scores
-    while one_more_time:
-        one_more_time = False
-        try:
-            response = service.comments().analyze(body=analyze_request).execute()
 
-            tmp['toxicity'] = response['attributeScores']['TOXICITY']['summaryScore']['value']
-            tmp['identity_attack'] = response['attributeScores']['IDENTITY_ATTACK']['summaryScore']['value']
-            tmp['insult'] = response['attributeScores']['INSULT']['summaryScore']['value']
-            tmp['profanity'] = response['attributeScores']['PROFANITY']['summaryScore']['value']
-            tmp['threat'] = response['attributeScores']['THREAT']['summaryScore']['value']
-            tmp['sexually_explicit'] = response['attributeScores']['SEXUALLY_EXPLICIT']['summaryScore']['value']
-            tmp['flirtation'] = response['attributeScores']['FLIRTATION']['summaryScore']['value']
-            
-        except HttpError as e:
-            print('\n----------------------------------------------------')
-            # all scores should be nan
-            if e.resp.status == 429:
-                one_more_time = True
-                print('Sleeping...')
-                time.sleep(1)
-            if e.resp.status == 400:
-                print(e)
-                print(tmp['text'])    
-    return tmp
+    # TODO 10.17: if method == 'POST'
+    # add new muted to muted list
 
-def get_samples_1(tweet_replies):
-    tweet_replies = pd.DataFrame.from_records(tweet_replies)
-    samples = set()
-    for type in ['toxicity', 'identity_attack', 'insult', 'profanity', 'threat', 'sexually_explicit', 'flirtation']:
-        indices = tweet_replies[tweet_replies[type] > 0.5].sample(frac=1).index.values
-        for idx in list(indices):
-            samples.add(idx)
-    tweet_replies = tweet_replies.iloc[list(samples)]
-    tweet_replies = tweet_replies.to_dict('records')
-    return tweet_replies
-
-def get_samples_2(tweet_replies):
-    tweet_replies = pd.DataFrame.from_records(tweet_replies)
-    tweet_replies = tweet_replies.groupby('reply_user_id').apply(lambda x: x.sample(n=2))    
-    tweet_replies = tweet_replies.to_dict('records')
-    return tweet_replies
+    return render_template('dash.html', len=len(tweet_replies), result=tweet_replies)
 
 @app.route("/dash")
 def dash():
-    return render_template('dash.html', len=1, result = [])
+    return render_template('dash.html', len=1, result=[])
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8080, debug=True)
