@@ -7,7 +7,7 @@ class StreamListener(tweepy.StreamListener):
         self.service = service
         self.client = client
 
-    def on_status(self, status):
+    def on_status(self, status, client):
         if status.in_reply_to_user_id_str is not None:
             print('is_reply')
             key = client.key(status.in_reply_to_user_id_str, status.in_reply_to_status_id_str) # context uid, tid
