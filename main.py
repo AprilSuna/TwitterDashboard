@@ -1,7 +1,8 @@
 from flask import render_template, Flask, redirect, request, session
 from google.cloud import datastore
-from util.functions import alreadyExist, store_user_profile, random_salt, hash_pbkdf2, store_tweets
+from util.functions import alreadyExist, store_user_profile, random_salt, hash_pbkdf2, store_tweets, store_label, get_users
 import tweepy, logging
+from flask_paginate import Pagination, get_page_args
 from util.StreamListener import StreamListener
 
 datastore_client = datastore.Client('twitterdashboard')
@@ -24,16 +25,65 @@ access_token_url = 'https://api.twitter.com/oauth/access_token'
 @app.route('/', methods=['POST', 'GET'])
 def index():
     title = 'TwitterDashboardHomePage'
-    return render_template('index.html')
-#     tweet_replies = [
-#         {'tid': 1181568448004050951, 
-#         'context': 'As President, I leaned on @AmbassadorRice’s experience, expertise, and willingness to tell me what I needed to hear… https://t.co/oWx2obfDF5', 'hashtag': [], 
-#         'reply': {'uid': 1174477973879238657, 'uname': 'mpy', 'reply': '@BarackObama \nObama still control mainstream media and many federal government agencies. the media is party of the… https://t.co/dZsNVllSfW'}}, 
-#         {'tid': 1181568448004050951, 'context': 'As President, I leaned on @AmbassadorRice’s experience, expertise, and willingness to tell me what I needed to hear… https://t.co/oWx2obfDF5', 'hashtag': [], 
-#         'reply': {'uid': 51639017, 'uname': 'Valerie Cartwright',
-#          'reply': 'RT @ReasePaino: @BarackObama @AmbassadorRice https://t.co/NjZFQ2HD0Y'}}
-#         ]
-#     return render_template('dash.html', len = len(tweet_replies), result = tweet_replies)
+    # return render_template('index.html')
+    
+    page = int(request.args.get('page', 1))
+    per_page = 1
+    offset = (page - 1) * per_page
+
+    search = False
+    q = request.args.get('q')
+    if q:
+        search = True
+
+    tweet_replies = [
+        {'tid': 1181568448004050951, 
+        'context': 'As President, I leaned on @AmbassadorRice’s experience, expertise, and willingness to tell me what I needed to hear… https://t.co/oWx2obfDF5',
+        'hashtag': [], 
+        'reply': {'uid': 1174477973879238657, 'uname': 'mpy', 'reply': '@BarackObama \nObama still control mainstream media and many federal government agencies. the media is party of the… https://t.co/dZsNVllSfW'}}, 
+        {'tid': 1181568448004050951, 'context': 'As President, I leaned on @AmbassadorRice’s experience, expertise, and willingness to tell me what I needed to hear… https://t.co/oWx2obfDF5', 'hashtag': [], 
+        'reply': {'uid': 51639017, 'uname': 'Valerie Cartwright',
+        'reply': 'RT @ReasePaino: @BarackObama @AmbassadorRice https://t.co/NjZFQ2HD0Y'}},
+        {'tid': 111111111, 
+        'context': 'As President, I leaned on @AmbassadorRice’s experience, expertise, and willingness to tell me what I needed to hear… https://t.co/oWx2obfDF5',
+        'hashtag': [], 
+        'reply': {'uid': 1174477973879238657, 'uname': 'mpy', 'reply': '@BarackObama \nObama still control mainstream media and many federal government agencies. the media is party of the… https://t.co/dZsNVllSfW'}}
+        ]
+    (pagination_tweet, number) = get_users(tweet_replies, offset=offset, per_page=per_page)
+    pagination = Pagination(page=page, per_page=per_page, total=len(tweet_replies))
+    return render_template('test.html',
+                           number=number,
+                           len = len(pagination_tweet),
+                           users=pagination_tweet,
+                           page=page,
+                           per_page=per_page,
+                           pagination=pagination,
+                           )
+    
+    # Just For test !!!
+    # tweet_replies = [
+    #         {'tid': 1181568448004050951, 
+    #         'context': 'As President, I leaned on @AmbassadorRice’s experience, expertise, and willingness to tell me what I needed to hear… https://t.co/oWx2obfDF5',
+    #         'hashtag': [], 
+    #         'reply': {'uid': 1174477973879238657, 'uname': 'mpy', 'reply': '@BarackObama \nObama still control mainstream media and many federal government agencies. the media is party of the… https://t.co/dZsNVllSfW'}}, 
+    #         {'tid': 1181568448004050951, 'context': 'As President, I leaned on @AmbassadorRice’s experience, expertise, and willingness to tell me what I needed to hear… https://t.co/oWx2obfDF5', 'hashtag': [], 
+    #         'reply': {'uid': 51639017, 'uname': 'Valerie Cartwright',
+    #         'reply': 'RT @ReasePaino: @BarackObama @AmbassadorRice https://t.co/NjZFQ2HD0Y'}}
+    #         ]
+    # if request.method == 'POST':
+    #     HarassmentCount = []
+    #     DirectedCount = []
+    #     for i in range(len(tweet_replies)):
+    #         nameH = 'Harassment' + str(i)
+    #         nameD = 'Directed' + str(i)
+    #         HarassmentCount.append(request.form[nameH])
+    #         DirectedCount.append(request.form[nameD])
+    #     print(HarassmentCount[0])
+    #     print(DirectedCount)
+    # if len(tweet_replies) != 0:
+    #     return render_template('app.html', len = len(tweet_replies), result = tweet_replies)
+    # else:
+    #     return render_template('app.html')
 
 
 @app.route("/login", methods=['POST', 'GET'])
@@ -57,7 +107,7 @@ def login():
                 error = 'Invalid password'
                 loaded = False
     if loaded:
-      return redirect('/dash')
+        return redirect('/dash')
     else:
         return render_template('login.html', error=error)
 
@@ -116,10 +166,9 @@ def callback():
     return redirect('/app')
 
 
-@app.route('/app') # rate limit, might use stream api
+@app.route('/app', methods=['POST', 'GET']) 
 def get_tweets(): # old version in StreamListener
     token, token_secret = session['token']
-
     # set up search api
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
     auth.set_access_token(token, token_secret)
@@ -138,30 +187,55 @@ def get_tweets(): # old version in StreamListener
     for tweet in tweets:
         tmp = {}
         tmp['tid'] = tweet.id_str
+        tmp['userid'] = tweet.user.id_str
         tmp['context'] = tweet.text
         tmp['hashtag'] = tweet.entities['hashtags']
         tmp['reply'] = []
         for reply in tweepy.Cursor(api.search, q=session['username'], since_id=tweet.id_str, result_type="mixed", count=2).items(2):
             if reply.in_reply_to_status_id_str == tweet.id_str:
-                tmp['reply']= {'uid': reply.user.id_str, 'uname': reply.user.screen_name, 'reply': reply.text}
+                tmp['reply']= {'tid': reply.id_str, 'uid': reply.user.id_str, 'uname': reply.user.screen_name, 'reply': reply.text}
     #           tweet_replies used for display in dash.html
                 tweet_replies.append(tmp.copy())
     #           store to database & for training
-                store_tweets(datastore_client, tweet.id_str, 
-                            reply_to_id=tweet.user.id_str,
-                            reply_to_name=session['username'], 
-                            context=tweet.text, 
-                            context_hashtags=tweet.entities['hashtags'], 
-                            reply_id=reply.id_str,
-                            reply_user_id=reply.user.id_str, 
-                            reply_user_name=reply.user.screen_name, 
-                            text=reply.text)
-    print(tweet_replies)
+                store_tweets(
+                        datastore_client, tmp['tid'], 
+                        reply_to_id=tmp['userid'],
+                        reply_to_name=session['username'], 
+                        context=tmp['context'], 
+                        context_hashtags=tmp['hashtag'], 
+                        reply_id=tmp['reply']['tid'],
+                        reply_user_id=tmp['reply']['uid'], 
+                        reply_user_name=tmp['reply']['uname'], 
+                        text=tmp['reply']['reply']
+                        )
+    
+    if request.method == 'POST':
+        if len(tweet_replies) != 0:
+            for i in range(len(tweet_replies)):
+                nameH = 'Harassment' + str(i)
+                nameD = 'Directed' + str(i)
+                # tweet_replies[i]['Harassment'] = request.form[nameH]
+                # tweet_replies[i]['Directed'] = request.form[nameD]
+                Harassment = request.form[nameH]
+                Directed = request.form[nameD]
+                print('User Print Here!')
+                print(Harassment, Directed)
+                store_label(
+                    datastore_client, 
+                    tweet_replies[i]['reply']['tid'], 
+                    Harassment,
+                    Directed
+                )
 
-    # display for label
-    # return render_template('app.html')
+    if len(tweet_replies) != 0:
+        return render_template('app.html', len = len(tweet_replies), result = tweet_replies)
+    else:
+        return render_template('app.html')
+
     # after labeling
-    return render_template('dash.html', len = len(tweet_replies), result = tweet_replies)
+    # return render_template('dash.html')
+    # display for label
+    return render_template('app.html', len = len(tweet_replies), result = tweet_replies)
 
                     
 @app.route("/dash")

@@ -2,6 +2,9 @@ from google.cloud import datastore
 from hashlib import pbkdf2_hmac
 from random import getrandbits
 
+def get_users(users, offset, per_page):
+    return (users[offset: offset + per_page], offset)
+
 def alreadyExist(client, username):
     key = client.key('user_file', username)
     entity = client.get(key)
@@ -34,7 +37,7 @@ def hash_pbkdf2(x, salt):
 
 def store_tweets(client, context_id, reply_to_id, reply_to_name, context, context_hashtags, reply_id, reply_user_id, reply_user_name, text):
     kind = 'tweets'
-    name = context_id
+    name = reply_id
     task_key = client.key(kind, name)
     entity = datastore.Entity(key=task_key)
     entity['reply_to_id'] = reply_to_id
@@ -45,5 +48,17 @@ def store_tweets(client, context_id, reply_to_id, reply_to_name, context, contex
     entity['reply_user_id'] = reply_user_id
     entity['reply_user_name'] = reply_user_name
     entity['text'] = text
+    entity['Harassment'] = 0
+    entity['Directed'] = 0
     client.put(entity)
     print('Saved', entity.key.name, entity)
+
+def store_label(client, reply_id, Harassment, Directed):
+    kind = 'tweets'
+    name = reply_id
+    task_key = client.key(kind, name)
+    entity = client.get(task_key)
+    entity['Harassment'] = Harassment
+    entity['Directed'] = Directed
+    client.put(entity)
+    print('Saved Label', entity.key.name, entity)

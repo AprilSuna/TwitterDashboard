@@ -3,18 +3,40 @@
 <head>
     <title>Self-label Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/mainStyle.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/navbar.css') }}">
 </head>
 
-<h2>Self-label Dashboard</h2>
+<h2>Self-label </h2>
+
+<body>
+
+    <div class="wrapper">
+            <div class="navbar" template="/modules/navbar/navbar.html" id="main-navbar"></div>
+
+        <div class="mainbody" id="mainbody">
+            <div class="col1">
+                <!-- Followers Box Begin -->
+                <div class="followers-box" template="/modules/followers-box/followers-box.html"></div>
+                <!-- Followers Box End -->
+            </div>
+            <div class="col2">
+                <div template="/modules/tweet-box/tweet-box.html"></div>
+            </div>
+            <!-- <div class="col3">col 3</div> -->
+        </div>
+    </div>
+
+</body>
+
 <table class="bordered">
     <thead>
 
     <tr>
         <th>#</th>        
-        <th>Tweet</th>
         <th>Reply</th>
-        <th>Contains Harassment</th>
-        <th>Directed to me</th>
+        <th>Tweet</th>
+        <th>Reply User</th>
+        <th>Mute ?</th>
     </tr>
     </thead>
     <ol>
@@ -22,31 +44,20 @@
             <tr>
             <td width="2%">{{i}}</td>
             <td width="40%">
-                {{result[i]['context']}}
-            </td>
-            <td width="40%">
                 {{result[i]['reply']['reply']}}
             </td>
-            <td width="8%">
-                <div class="radio">
-                    <label><input type="radio" id="Harassment" name="optradioH"+i value="0">Yes</label>
-                </div>
-                <div class="radio">
-                    <label><input type="radio" id="Harassment" name="optradioH"+i value="1">No</label>
-                </div>
-                <div class="radio">
-                    <label><input type="radio" id="Harassment" name="optradioH"+i value="2">Not Sure</label>
-                </div>
+            <td width="40%">
+                {{result[i]['context']}}
+            </td>
+            <td width="10%">
+                {{result[i]['reply']['uname']}}
             </td>
             <td width="8%">
                 <div class="radio">
-                    <label><input type="radio" id="Directed" name="optradioD"+i value="0">Yes</label>
+                    <label><input type="radio" id="Mute" name="{{'mute' + i|string}}" value="0">Yes</label>
                 </div>
                 <div class="radio">
-                    <label><input type="radio" id="Directed" name="optradioD"+i value="1">No</label>
-                </div>
-                <div class="radio">
-                    <label><input type="radio" id="Directed" name="optradioD"+i value="2">Not Sure</label>
+                    <label><input type="radio" id="Mute" name="{{'mute' + i|string}}" value="1">No</label>
                 </div>
             </td>
             </tr>   

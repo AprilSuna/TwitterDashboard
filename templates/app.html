@@ -1,25 +1,67 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-      <meta charset="UTF-8">
-      <title>Content</title>
-  </head>
-  <body>
-      <h2>Show Initial Tweets</h2>
-     <!-- <form action='{{ url_for('.index') }}' method="POST">
-         <table>
-             <tr>
-                 <td>Username:</td>
-                 <td><input type="text" name='username' placeholder="Username"></td>
-             </tr>
-             <tr>
-                 <td>Password:</td>
-                 <td><input type="password" name='password' placeholder="Password"></td>
-             </tr>
-             <tr>
-                 <td><input type="submit" value="Login"></td>
-             </tr>
-         </table>
-     </form> -->
- </body>
- </html>
+    <title>Self-label Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mainStyle.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/navbar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tweet_box.css') }}">
+    <style>
+    #nav {
+        line-height:30px;
+        background-color:#eeeeee;
+        height:300px;
+        width:100px;
+        float:left;
+        padding:5px;	      
+    }
+    #section {
+        width:350px;
+        float:left;
+        padding:10px;	 	 
+    }
+    </style>
+</head>
+
+<body>
+    <div id="nav">
+        Label<br>
+        Home<br>
+        MyDash<br>       
+    </div>
+
+    <form method="POST">
+    <div id="section">
+        {% include 'tweetbox-toolbar-area.html'%}
+
+        {%for i in range(0, len)%}
+            <p>{{i}}</p>
+            <p>
+                {{result[i]['reply']['reply']}}
+            </p>
+            <p>
+                {{result[i]['context']}}
+            </p>
+            <p>
+                {{result[i]['reply']['uname']}}
+            </p>
+            <p>
+                <div class="radio">
+                    <label><input type="radio" id="Mute" name="{{'mute' + i|string}}" value="0">Yes</label>
+                </div>
+                <div class="radio">
+                    <label><input type="radio" id="Mute" name="{{'mute' + i|string}}" value="1">No</label>
+                </div>
+            </p>  
+        {%endfor%}
+    <input type=submit value=Submit>
+    </form>
+    </div>
+</body>
+
+<script>
+    document.addEventListener('submit', function(e) {
+        console.log(e);
+    })
+</script>
+
+</html>
