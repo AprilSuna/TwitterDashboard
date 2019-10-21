@@ -1,5 +1,5 @@
 import tweepy
-from functions import get_perspective, store_reply, store_tweet # dunno if the path is correct???
+from . functions import get_perspective, store_reply, store_tweet 
 
 class StreamListener(tweepy.StreamListener):
     def __init__(self, service, client):
@@ -8,12 +8,12 @@ class StreamListener(tweepy.StreamListener):
         self.client = client
 
     def on_status(self, status):
-        if in_reply_to_user_id_str is not None:
+        if status.in_reply_to_user_id_str is not None:
             print('is_reply')
             key = client.key(status.in_reply_to_user_id_str, status.in_reply_to_status_id_str) # context uid, tid
             context = client.get(key)
             toxic_dict = get_perspective(text)    
-            store_reply(client, 
+            store_reply(client,
                         reply_to_id=status.in_reply_to_user_id_str, 
                         reply_to_name=status.in_reply_to_screen_name, 
                         context_id=status.in_reply_to_status_id_str, 
@@ -23,15 +23,22 @@ class StreamListener(tweepy.StreamListener):
                         reply_user_name=status.user.screen_name, 
                         reply_id=status.id_str, 
                         text=status.text, 
-                        reply_hashtags=status.entities.hashtags,
-                        toxic_dict['toxicity'], toxic_dict['identity_attack'], toxic_dict['insult'], toxic_dict['profanity'], toxic_dict['threat'], toxic_dict['sexually_explicit'], toxic_dict['flirtation'])
+                        reply_hashtags=status.entities['hashtags'],
+                        toxicity=toxic_dict['toxicity'], 
+                        identity_attack=toxic_dict['identity_attack'], 
+                        insult=toxic_dict['insult'], 
+                        profanity=toxic_dict['profanity'], 
+                        threat=toxic_dict['threat'], 
+                        sexually_explicit=toxic_dict['sexually_explicit'], 
+                        flirtation=toxic_dict['flirtation'])
+            # either pass to model now or run cron job (tensor) on training model
         else:
             store_tweet(client, 
                         user_id=status.user.id_str,
                         tweet_id=status.id_str,
                         user_name=status.user.screen_name,
                         tweet=status.text,
-                        tweet_hashtags=status.entities.hashtags)
+                        tweet_hashtags=status.entities['hashtags'])
 
 
 

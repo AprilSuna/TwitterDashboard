@@ -13,7 +13,7 @@ consumer_key = '0IvIaXCm8CUHeuayBiFS3Blwd'
 consumer_secret = 'WlgHUfC7waVlRrktuyySBRQHwVSBPFpxEud2hGY08i83NFXpNk'
 perspective_api_key = 'AIzaSyAQzy172qDSsB89r-8sKcRKoLKncsHq8eU'
 
-callback_uri = 'https://aa3a6ae5.ngrok.io/callback'
+callback_uri = 'https://6b000ae9.ngrok.io/callback'
 request_token_url = 'https://api.twitter.com/oauth/request_token'
 authorization_url = 'https://api.twitter.com/oauth/authorize'
 access_token_url = 'https://api.twitter.com/oauth/access_token'
@@ -110,7 +110,7 @@ def callback():
 
 
 @app.route('/app') # rate limit, might use stream api
-def app():
+def initial():
     # set up search api
     token, token_secret = session['token']
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
@@ -126,11 +126,11 @@ def app():
     # get initial block and mute ids
     bm_ids = set()
     for i in api.blocks_ids():
-        bm.add(str(i))
+        bm_ids.add(str(i))
     for i in api.mutes_ids():
-        bm.add(str(i))
+        bm_ids.add(str(i))
     # store to db for further update
-    store_bm(datastore_client, user.id_str, bm_ids)
+    store_bm(user.id_str, bm_ids)
     # scrape initial set of tweets for labeling
     tweet_replies = get_initial_tweets(api, screen_name=session['username'], count=10, service=service)
 

@@ -1,9 +1,11 @@
-# from google.cloud import datastore
+from google.cloud import datastore
 from hashlib import pbkdf2_hmac
 from random import getrandbits
 import tweepy
 from googleapiclient import discovery
 from googleapiclient.errors import HttpError
+import pandas as pd
+from pprint import pprint
 
 def alreadyExist(client, username):
     key = client.key('user_file', username)
@@ -38,10 +40,15 @@ def store_reply(client, reply_to_id, reply_to_name,
     context_id, context, context_hashtags, 
     reply_user_id, reply_user_name, reply_id, text, reply_hashtags,
     toxicity, identity_attack, insult, profanity, threat, sexually_explicit, flirtation):
+    print('==================== store_reply ====================')
     kind = reply_to_id # context user id as table name
     name = context_id  # context tweet id as unique identifier
     task_key = client.key(kind, name)
     entity = datastore.Entity(key=task_key)
+    # for testing
+    # entity = {}
+    # entity['kind'] = reply_to_id
+    # entity['name'] = context_id
     entity['reply_to_name'] = reply_to_name
     entity['context'] = context
     entity['context_hashtags'] = context_hashtags
@@ -59,24 +66,31 @@ def store_reply(client, reply_to_id, reply_to_name,
     entity['flirtation'] = flirtation
     client.put(entity)
     print('Saved', entity.key.kind, entity.key.name, entity.text)
+    # pprint(entity)
 
 def store_tweet(client, user_id, tweet_id, user_name, tweet, tweet_hashtags): # if it's an original tweet
+    print('==================== store_tweet ====================')
     kind = user_id # poster's id
     name = tweet_id    # poster's text
     task_key = client(kind, name)
     entity = datastore.Entity(key=task_key)
+    # entity = {}
+    # entity['kind'] = user_id
+    # entity['name'] = tweet_id
     entity['screen_name'] = user_name
     entity['tweet'] = tweet
     entity['tweet_hashtags'] = tweet_hashtags
     client.put(entity)
     print('Saved', entity.key.kind, entity.key.name, entity.tweet)
+    # pprint(entity)
 
 def get_initial_tweets(api, screen_name, count, service): # old version in StreamListener
+    print('==================== get_initial_tweets ====================')
     # only select tweets that have replies (would be hard for testing)
     tweets = api.user_timeline(screen_name=screen_name, count=count) # max count = 200
     tweet_replies = []
     for tweet in tweets:
-        for reply in tweepy.Cursor(api.search, q=session['username'], since_id=tweet.id_str, result_type="mixed").items(5):
+        for reply in tweepy.Cursor(api.search, q=screen_name, since_id=tweet.id_str, result_type="mixed").items(5):
             if reply.in_reply_to_status_id_str == tweet.id_str:                
                 tmp = get_perspective(service, reply.text)
                 assert reply.in_reply_to_status_id_str == tweet.id_str
@@ -85,13 +99,14 @@ def get_initial_tweets(api, screen_name, count, service): # old version in Strea
                 tmp['reply_user_id'] = reply.user.id_str # not for display, for sampling by user
                 tmp['reply_user_name'] = reply.user.screen_name
                 tmp['text'] = reply.text
+                pprint(tmp)
 
                 # tweet_replies used for display in dash.html
                 tweet_replies.append(tmp.copy())
                 # store to database & for training
-                store_reply(datastore_client, 
+                store_reply(client,
                             reply_to_id=tweet.user.id_str,
-                            reply_to_name=session['username'], 
+                            reply_to_name=screen_name, 
                             context_id=tweet.id_str, 
                             context=tweet.text, 
                             context_hashtags=tweet.entities['hashtags'], 
@@ -169,13 +184,17 @@ def get_samples_2(tweet_replies):
     return tweet_replies
 
 def store_bm(client, user_id, bm_ids):
+    print('==================== store_bm ====================')
     kind = 'bm' 
     name = user_id
     task_key = client(kind, name)
     entity = datastore.Entity(key=task_key)
+    # entity = {}
+    # entity['name'] = user_id
     entity['bm_ids'] = bm_ids # set to list??
     client.put(entity)
     print('Saved', entity.key.kind, entity.key.name, entity.bm_ids)
+    # pprint(entity)
 
 
 
