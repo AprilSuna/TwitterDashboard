@@ -3,7 +3,7 @@ body {
     margin: 40px auto;
     padding: 0px;
     font-family: Arial, Helvetica, sans-serif;
-    background-color: #e6ecf0;
+    background-color: #ffffff;
     color :black ;
 }
 
@@ -13,11 +13,52 @@ body {
     height:600px;
     width:100px;
     float:left;
-    padding:5px; 
+    padding:5px;
 }
 #section {
     width:350px;
     float:left;
     padding:10px; 
 }
+p.serif {
+  font-family: "Times New Roman", Times, serif;
+  color : #0084b4 ;
+}
+#selfLabel {
+  font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
 
+#selfLabel td, #selfLabel th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+#selfLabel th {
+  padding-top: 20px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #98D8FF;
+  color: white;
+}
+#foo
+{
+     position: fixed;
+     right: 0;
+}
+.pagination-page-info {
+    padding: .6em;
+    padding-left: 0;
+    width: 40em;
+    margin: .5em;
+    margin-left: 0;
+    font-size: 12px;
+}
+.pagination-page-info b {
+    color: black;
+    background: #6aa6ed;
+    padding-left: 2px;
+    padding: .1em .25em;
+    font-size: 150%;
+}

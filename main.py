@@ -1,8 +1,9 @@
 from flask import render_template, Flask, redirect, request, session
 from google.cloud import datastore
-from util.functions import alreadyExist, store_user_profile, random_salt, hash_pbkdf2, store_tweets, store_label, get_users
-import tweepy, logging
-from flask_paginate import Pagination, get_page_args
+from util.functions import alreadyExist, store_user_profile, hash_pbkdf2, store_tweets, store_label, get_users
+import tweepy
+import logging
+from flask_paginate import Pagination
 from util.StreamListener import StreamListener
 
 datastore_client = datastore.Client('twitterdashboard')
@@ -25,65 +26,7 @@ access_token_url = 'https://api.twitter.com/oauth/access_token'
 @app.route('/', methods=['POST', 'GET'])
 def index():
     title = 'TwitterDashboardHomePage'
-    # return render_template('index.html')
-    
-    page = int(request.args.get('page', 1))
-    per_page = 1
-    offset = (page - 1) * per_page
-
-    search = False
-    q = request.args.get('q')
-    if q:
-        search = True
-
-    tweet_replies = [
-        {'tid': 1181568448004050951, 
-        'context': 'As President, I leaned on @AmbassadorRice’s experience, expertise, and willingness to tell me what I needed to hear… https://t.co/oWx2obfDF5',
-        'hashtag': [], 
-        'reply': {'uid': 1174477973879238657, 'uname': 'mpy', 'reply': '@BarackObama \nObama still control mainstream media and many federal government agencies. the media is party of the… https://t.co/dZsNVllSfW'}}, 
-        {'tid': 1181568448004050951, 'context': 'As President, I leaned on @AmbassadorRice’s experience, expertise, and willingness to tell me what I needed to hear… https://t.co/oWx2obfDF5', 'hashtag': [], 
-        'reply': {'uid': 51639017, 'uname': 'Valerie Cartwright',
-        'reply': 'RT @ReasePaino: @BarackObama @AmbassadorRice https://t.co/NjZFQ2HD0Y'}},
-        {'tid': 111111111, 
-        'context': 'As President, I leaned on @AmbassadorRice’s experience, expertise, and willingness to tell me what I needed to hear… https://t.co/oWx2obfDF5',
-        'hashtag': [], 
-        'reply': {'uid': 1174477973879238657, 'uname': 'mpy', 'reply': '@BarackObama \nObama still control mainstream media and many federal government agencies. the media is party of the… https://t.co/dZsNVllSfW'}}
-        ]
-    (pagination_tweet, number) = get_users(tweet_replies, offset=offset, per_page=per_page)
-    pagination = Pagination(page=page, per_page=per_page, total=len(tweet_replies))
-    return render_template('test.html',
-                           number=number,
-                           len = len(pagination_tweet),
-                           users=pagination_tweet,
-                           page=page,
-                           per_page=per_page,
-                           pagination=pagination,
-                           )
-    
-    # Just For test !!!
-    # tweet_replies = [
-    #         {'tid': 1181568448004050951, 
-    #         'context': 'As President, I leaned on @AmbassadorRice’s experience, expertise, and willingness to tell me what I needed to hear… https://t.co/oWx2obfDF5',
-    #         'hashtag': [], 
-    #         'reply': {'uid': 1174477973879238657, 'uname': 'mpy', 'reply': '@BarackObama \nObama still control mainstream media and many federal government agencies. the media is party of the… https://t.co/dZsNVllSfW'}}, 
-    #         {'tid': 1181568448004050951, 'context': 'As President, I leaned on @AmbassadorRice’s experience, expertise, and willingness to tell me what I needed to hear… https://t.co/oWx2obfDF5', 'hashtag': [], 
-    #         'reply': {'uid': 51639017, 'uname': 'Valerie Cartwright',
-    #         'reply': 'RT @ReasePaino: @BarackObama @AmbassadorRice https://t.co/NjZFQ2HD0Y'}}
-    #         ]
-    # if request.method == 'POST':
-    #     HarassmentCount = []
-    #     DirectedCount = []
-    #     for i in range(len(tweet_replies)):
-    #         nameH = 'Harassment' + str(i)
-    #         nameD = 'Directed' + str(i)
-    #         HarassmentCount.append(request.form[nameH])
-    #         DirectedCount.append(request.form[nameD])
-    #     print(HarassmentCount[0])
-    #     print(DirectedCount)
-    # if len(tweet_replies) != 0:
-    #     return render_template('app.html', len = len(tweet_replies), result = tweet_replies)
-    # else:
-    #     return render_template('app.html')
+    return render_template('index.html', title=title)
 
 
 @app.route("/login", methods=['POST', 'GET'])
@@ -208,7 +151,6 @@ def get_tweets(): # old version in StreamListener
                         reply_user_name=tmp['reply']['uname'], 
                         text=tmp['reply']['reply']
                         )
-    
     if request.method == 'POST':
         if len(tweet_replies) != 0:
             for i in range(len(tweet_replies)):
@@ -228,19 +170,39 @@ def get_tweets(): # old version in StreamListener
                 )
 
     if len(tweet_replies) != 0:
-        return render_template('app.html', len = len(tweet_replies), result = tweet_replies)
+        page = int(request.args.get('page', 1))
+        per_page = 1
+        offset = (page - 1) * per_page
+
+        search = False
+        q = request.args.get('q')
+        if q:
+            search = True
+        (pagination_tweet, number) = get_users(tweet_replies, offset=offset, per_page=per_page)
+        pagination = Pagination(
+            page=page, per_page=per_page, total=len(tweet_replies),
+            css_framework='bootstrap3')
+        return render_template('app.html',
+                            username=session['username'],
+                            len=len(pagination_tweet),
+                            users=pagination_tweet,
+                            page=page,
+                            per_page=per_page,
+                            pagination=pagination
+                            )
     else:
         return render_template('app.html')
 
     # after labeling
     # return render_template('dash.html')
     # display for label
-    return render_template('app.html', len = len(tweet_replies), result = tweet_replies)
+    return render_template('app.html', len=len(tweet_replies), result=tweet_replies)
 
-                    
+
 @app.route("/dash")
 def dash():
     return render_template('dash.html', len=1, result = [])
+
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8080, debug=True)
