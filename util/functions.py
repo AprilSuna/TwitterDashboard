@@ -8,6 +8,9 @@ import pandas as pd
 from pprint import pprint
 import time
 
+def get_users(users, offset, per_page):
+    return (users[offset: offset + per_page], offset)
+
 def alreadyExist(client, username):
     key = client.key('user_file', username)
     entity = client.get(key)
@@ -36,6 +39,7 @@ def random_salt():
 
 def hash_pbkdf2(x, salt):
     return pbkdf2_hmac('sha256', x.encode('utf-8'), bytes.fromhex(salt), 100000).hex()
+
 
 def store_reply(client, reply_to_id, reply_to_name, 
     context_id, context, context_hashtags, 
@@ -208,3 +212,19 @@ def store_bm(client, user_id, bm_ids):
 
 
 
+=======
+    entity['Harassment'] = 0
+    entity['Directed'] = 0
+    client.put(entity)
+    print('Saved', entity.key.name, entity)
+
+def store_label(client, reply_id, Harassment, Directed):
+    kind = 'tweets'
+    name = reply_id
+    task_key = client.key(kind, name)
+    entity = client.get(task_key)
+    entity['Harassment'] = Harassment
+    entity['Directed'] = Directed
+    client.put(entity)
+    print('Saved Label', entity.key.name, entity)
+>>>>>>> april

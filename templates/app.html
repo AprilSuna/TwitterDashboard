@@ -1,25 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-      <meta charset="UTF-8">
-      <title>Content</title>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Self Label Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mainStyle.css') }}">
   </head>
   <body>
-      <h2>Show Initial Tweets</h2>
-     <!-- <form action='{{ url_for('.index') }}' method="POST">
-         <table>
-             <tr>
-                 <td>Username:</td>
-                 <td><input type="text" name='username' placeholder="Username"></td>
-             </tr>
-             <tr>
-                 <td>Password:</td>
-                 <td><input type="password" name='password' placeholder="Password"></td>
-             </tr>
-             <tr>
-                 <td><input type="submit" value="Login"></td>
-             </tr>
-         </table>
-     </form> -->
- </body>
- </html>
+    <div id="nav">
+        Label<br>
+        Home<br>
+        MyDash<br>       
+    </div>
+    <div id="section">
+        <h2 class="serif"> Hi {{username}}! </h2>
+        <div class="table-responsive">
+            <table id="selfLabel">
+                <thead>
+                    <tr>
+                        <th>  #  </th>
+                        <th>Reply</th>
+                        <th>context</th>
+                        <th>Reply_Username</th>
+                        <th>Mute?</th>
+                    </tr>
+                </thead>
+            <tbody>
+            <form method="POST">
+            {% for user in users %}
+            <tr>
+              <td> {{ loop.index + (page - 1) * per_page }} </td>
+              <td>{{user['text']}}</td>
+              <td>{{user['context']}}</td>
+              <td>{{user['reply_user_name']}}</td>
+              <td>
+                <p>
+                    <div class="radio">
+                        <label><input type="radio" id="Mute" name="{{'mute' + number|string}}" value="0">Yes</label>
+                    </div>
+                    <div class="radio">
+                        <label><input type="radio" id="Mute" name="{{'mute' + number|string}}" value="1">No</label>
+                    </div>
+                </p>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div id="foo">
+          {{ pagination.links }}
+          <input type=submit value=Submit>
+      </div>、
+      </form>
+    </div>
+  </body>
+
+<script>
+    document.addEventListener('submit', function(e) {
+        console.log(e);
+    })
+</script>
+
+</html>

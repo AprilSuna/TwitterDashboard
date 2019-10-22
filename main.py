@@ -5,6 +5,12 @@ from googleapiclient import discovery
 from google.cloud import datastore
 import pandas as pd
 import tweepy, logging
+from flask_paginate import Pagination
+
+datastore_client = datastore.Client('twitterdashboard')
+
+app = Flask(__name__)
+app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
 
 # kelly's tokens
 access_token = '364156861-cSyt6v8Rjg4n8aVxRqI7stklhtvv69raNR7X3Tp9'
@@ -27,7 +33,7 @@ app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
 @app.route('/', methods=['POST', 'GET'])
 def index():
     title = 'TwitterDashboardHomePage'
-    return render_template('index.html')
+    return render_template('index.html', title=title)
 
 
 @app.route("/login", methods=['POST', 'GET'])
@@ -111,6 +117,7 @@ def callback():
 
 @app.route('/app') # rate limit, might use stream api
 def initial():
+
     # set up search api
     token, token_secret = session['token']
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
@@ -143,14 +150,58 @@ def initial():
     # scrape initial set of tweets for labeling
     tweet_replies = get_initial_tweets(api, screen_name=session['username'], count=10, service=service, client=datastore_client)
 
-    # display for label
-    # return render_template('app.html')
-    # after labeling
+# TODO: Change to Mute labeling!!!
+    if request.method == 'POST':
+        if len(tweet_replies) != 0:
+            for i in range(len(tweet_replies)):
+                nameH = 'Harassment' + str(i)
+                nameD = 'Directed' + str(i)
+                # tweet_replies[i]['Harassment'] = request.form[nameH]
+                # tweet_replies[i]['Directed'] = request.form[nameD]
+                Harassment = request.form[nameH]
+                Directed = request.form[nameD]
+                print('User Print Here!')
+                print(Harassment, Directed)
+                store_label(
+                    datastore_client, 
+                    tweet_replies[i]['reply']['tid'], 
+                    Harassment,
+                    Directed
+                )
+
+    if len(tweet_replies) != 0:
+        page = int(request.args.get('page', 1))
+        per_page = 1
+        offset = (page - 1) * per_page
+
+        search = False
+        q = request.args.get('q')
+        if q:
+            search = True
+        (pagination_tweet, number) = get_users(tweet_replies, offset=offset, per_page=per_page)
+        pagination = Pagination(
+            page=page, per_page=per_page, total=len(tweet_replies),
+            css_framework='bootstrap3')
+        return render_template('app.html',
+                            username=session['username'],
+                            len=len(pagination_tweet),
+                            users=pagination_tweet,
+                            page=page,
+                            per_page=per_page,
+                            pagination=pagination
+                            )
+    # TODO: how to deal w/ ?
+    else:
+        return render_template('app.html',
+            username=session['username'],
+                            len=len(pagination_tweet),
+                            users=pagination_tweet,
+                            page=page,
+                            per_page=per_page,
+                            pagination=pagination)
 
     # TODO 10.17: if method == 'POST'
     # add new muted to muted list
-
-    return render_template('dash.html', len=len(tweet_replies), result=tweet_replies)
 
 @app.route('/cron/bm') # can we pass argument to cron functions? and let it cron in separate threads
 def cron_bm():
@@ -192,9 +243,11 @@ def cron_bm():
     #     print('Saved', entity.key.kind, entity.key.name, entity['bm_ids'])
     return
 
+
 @app.route("/dash")
 def dash():
     return render_template('dash.html', len=1, result=[])
+
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8080, debug=True)
