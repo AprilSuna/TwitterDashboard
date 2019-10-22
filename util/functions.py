@@ -6,6 +6,7 @@ from googleapiclient import discovery
 from googleapiclient.errors import HttpError
 import pandas as pd
 from pprint import pprint
+import time
 
 def alreadyExist(client, username):
     key = client.key('user_file', username)
@@ -42,7 +43,7 @@ def store_reply(client, reply_to_id, reply_to_name,
     toxicity, identity_attack, insult, profanity, threat, sexually_explicit, flirtation):
     print('==================== store_reply ====================')
     kind = reply_to_id # context user id as table name
-    name = context_id  # context tweet id as unique identifier
+    name = reply_id  # reply id as unique identifier
     task_key = client.key(kind, name)
     entity = datastore.Entity(key=task_key)
     # for testing
@@ -50,11 +51,12 @@ def store_reply(client, reply_to_id, reply_to_name,
     # entity['kind'] = reply_to_id
     # entity['name'] = context_id
     entity['reply_to_name'] = reply_to_name
+    entity['context_id'] = context_id
     entity['context'] = context
     entity['context_hashtags'] = context_hashtags
     entity['reply_user_id'] = reply_user_id
     entity['reply_user_name'] = reply_user_name
-    entity['reply_id'] = reply_id
+    # entity['reply_id'] = reply_id
     entity['text'] = text
     entity['reply_hashtags'] = reply_hashtags
     entity['toxicity'] = toxicity
@@ -65,14 +67,14 @@ def store_reply(client, reply_to_id, reply_to_name,
     entity['sexually_explicit'] = sexually_explicit
     entity['flirtation'] = flirtation
     client.put(entity)
-    print('Saved', entity.key.kind, entity.key.name, entity.text)
+    print('Saved', entity.key.kind, entity.key.name, entity['text'])
     # pprint(entity)
 
 def store_tweet(client, user_id, tweet_id, user_name, tweet, tweet_hashtags): # if it's an original tweet
     print('==================== store_tweet ====================')
     kind = user_id # poster's id
     name = tweet_id    # poster's text
-    task_key = client(kind, name)
+    task_key = client.key(kind, name)
     entity = datastore.Entity(key=task_key)
     # entity = {}
     # entity['kind'] = user_id
@@ -81,10 +83,10 @@ def store_tweet(client, user_id, tweet_id, user_name, tweet, tweet_hashtags): # 
     entity['tweet'] = tweet
     entity['tweet_hashtags'] = tweet_hashtags
     client.put(entity)
-    print('Saved', entity.key.kind, entity.key.name, entity.tweet)
+    print('Saved', entity.key.kind, entity.key.name, entity['tweet'])
     # pprint(entity)
 
-def get_initial_tweets(api, screen_name, count, service): # old version in StreamListener
+def get_initial_tweets(api, screen_name, count, service, client): # old version in StreamListener
     print('==================== get_initial_tweets ====================')
     # only select tweets that have replies (would be hard for testing)
     tweets = api.user_timeline(screen_name=screen_name, count=count) # max count = 200
@@ -99,7 +101,7 @@ def get_initial_tweets(api, screen_name, count, service): # old version in Strea
                 tmp['reply_user_id'] = reply.user.id_str # not for display, for sampling by user
                 tmp['reply_user_name'] = reply.user.screen_name
                 tmp['text'] = reply.text
-                pprint(tmp)
+                # pprint(tmp)
 
                 # tweet_replies used for display in dash.html
                 tweet_replies.append(tmp.copy())
@@ -126,7 +128,7 @@ def get_initial_tweets(api, screen_name, count, service): # old version in Strea
     # tweet_replies = get_samples_1(tweet_replies)
 
     # option 2: group by reply users, threshold at 5
-    tweet_replies = get_samples_2(tweet_replies)
+    # tweet_replies = get_samples_2(tweet_replies)
     print(tweet_replies)
     return tweet_replies
              
@@ -179,7 +181,7 @@ def get_samples_1(tweet_replies):
 
 def get_samples_2(tweet_replies):
     tweet_replies = pd.DataFrame.from_records(tweet_replies)
-    tweet_replies = tweet_replies.groupby('reply_user_id').apply(lambda x: x.sample(n=2))    
+    tweet_replies = tweet_replies.groupby('reply_user_id').apply(lambda x: x.sample(frac=0.5))    
     tweet_replies = tweet_replies.to_dict('records')
     return tweet_replies
 
@@ -187,13 +189,13 @@ def store_bm(client, user_id, bm_ids):
     print('==================== store_bm ====================')
     kind = 'bm' 
     name = user_id
-    task_key = client(kind, name)
+    task_key = client.key(kind, name)
     entity = datastore.Entity(key=task_key)
     # entity = {}
     # entity['name'] = user_id
-    entity['bm_ids'] = bm_ids # set to list??
+    entity['bm_ids'] = list(bm_ids) 
     client.put(entity)
-    print('Saved', entity.key.kind, entity.key.name, entity.bm_ids)
+    print('Saved', entity.key.kind, entity.key.name, entity['bm_ids'])
     # pprint(entity)
 
 

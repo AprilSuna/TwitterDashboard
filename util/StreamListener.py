@@ -1,19 +1,20 @@
 import tweepy
 from . functions import get_perspective, store_reply, store_tweet 
 
+
 class StreamListener(tweepy.StreamListener):
     def __init__(self, service, client):
         super(StreamListener, self).__init__()
         self.service = service
         self.client = client
 
-    def on_status(self, status, client):
+    def on_status(self, status):
         if status.in_reply_to_user_id_str is not None:
             print('is_reply')
-            key = client.key(status.in_reply_to_user_id_str, status.in_reply_to_status_id_str) # context uid, tid
-            context = client.get(key)
-            toxic_dict = get_perspective(text)    
-            store_reply(client,
+            key = self.client.key(status.in_reply_to_user_id_str, status.in_reply_to_status_id_str) # context uid, tid
+            context = self.client.get(key)
+            toxic_dict = get_perspective(self.service, status.text)
+            store_reply(self.client,
                         reply_to_id=status.in_reply_to_user_id_str, 
                         reply_to_name=status.in_reply_to_screen_name, 
                         context_id=status.in_reply_to_status_id_str, 
@@ -33,7 +34,7 @@ class StreamListener(tweepy.StreamListener):
                         flirtation=toxic_dict['flirtation'])
             # either pass to model now or run cron job (tensor) on training model
         else:
-            store_tweet(client, 
+            store_tweet(self.client, 
                         user_id=status.user.id_str,
                         tweet_id=status.id_str,
                         user_name=status.user.screen_name,

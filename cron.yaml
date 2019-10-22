@@ -1,0 +1,4 @@
+cron:
+- description: update bm list
+  url: /cron/bm
+  schedule: every 1 minutes
