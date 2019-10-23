@@ -117,40 +117,7 @@ def callback():
 
 @app.route('/app') # rate limit, might use stream api
 def initial():
-
-    # set up search api
-    token, token_secret = session['token']
-    auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
-    auth.set_access_token(token, token_secret)
-    api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
-
-    # set up streaming api with new thread
-    print('start streaming for', session['username'])
-    stream = tweepy.Stream(auth=api.auth, listener=StreamListener(service, datastore_client))
-    user = api.get_user(screen_name=session['username'])
-    stream.filter(follow=[user.id_str], is_async=True)
-    # update user profile table with user twitter id (needed for cron job)
-    print('update local user with twitter id')
-    user_key = datastore_client.key('user_file', session['username'])
-    local_user = datastore_client.get(user_key)
-    try:
-        local_user['twitter_id'] = user.id_str
-        datastore_client.put(local_user)
-    except:
-        print('error')
-
-    # # get initial block and mute ids
-    # bm_ids = set()
-    # for i in api.blocks_ids():
-    #     bm_ids.add(str(i))
-    # for i in api.mutes_ids():
-    #     bm_ids.add(str(i))
-    # # store to db for further update
-    # store_bm(datastore_client, user.id_str, bm_ids)
-    # scrape initial set of tweets for labeling
-    tweet_replies = get_initial_tweets(api, screen_name=session['username'], count=10, service=service, client=datastore_client)
-
-# TODO: Change to Mute labeling!!!
+    # TODO: Change to Mute labeling!!!
     if request.method == 'POST':
         if len(tweet_replies) != 0:
             for i in range(len(tweet_replies)):
@@ -164,44 +131,77 @@ def initial():
                 print(Harassment, Directed)
                 store_label(
                     datastore_client, 
-                    tweet_replies[i]['reply']['tid'], 
+                    tweet_replies[i]['reply_id'], 
                     Harassment,
                     Directed
                 )
-
-    if len(tweet_replies) != 0:
-        page = int(request.args.get('page', 1))
-        per_page = 1
-        offset = (page - 1) * per_page
-
-        search = False
-        q = request.args.get('q')
-        if q:
-            search = True
-        (pagination_tweet, number) = get_users(tweet_replies, offset=offset, per_page=per_page)
-        pagination = Pagination(
-            page=page, per_page=per_page, total=len(tweet_replies),
-            css_framework='bootstrap3')
-        return render_template('app.html',
-                            username=session['username'],
-                            len=len(pagination_tweet),
-                            users=pagination_tweet,
-                            page=page,
-                            per_page=per_page,
-                            pagination=pagination
-                            )
-    # TODO: how to deal w/ ?
     else:
-        return render_template('app.html',
-            username=session['username'],
-                            len=len(pagination_tweet),
-                            users=pagination_tweet,
-                            page=page,
-                            per_page=per_page,
-                            pagination=pagination)
+        # set up search api
+        token, token_secret = session['token']
+        auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
+        auth.set_access_token(token, token_secret)
+        api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
 
-    # TODO 10.17: if method == 'POST'
-    # add new muted to muted list
+        # set up streaming api with new thread
+        print('start streaming for', session['username'])
+        stream = tweepy.Stream(auth=api.auth, listener=StreamListener(service, datastore_client))
+        user = api.get_user(screen_name=session['username'])
+        stream.filter(follow=[user.id_str], is_async=True)
+        # update user profile table with user twitter id (needed for cron job)
+        print('update local user with twitter id')
+        user_key = datastore_client.key('user_file', session['username'])
+        local_user = datastore_client.get(user_key)
+        try:
+            local_user['twitter_id'] = user.id_str
+            datastore_client.put(local_user)
+        except:
+            print('error')
+
+        # # get initial block and mute ids
+        # bm_ids = set()
+        # for i in api.blocks_ids():
+        #     bm_ids.add(str(i))
+        # for i in api.mutes_ids():
+        #     bm_ids.add(str(i))
+        # # store to db for further update
+        # store_bm(datastore_client, user.id_str, bm_ids)
+        # scrape initial set of tweets for labeling
+        tweet_replies = get_initial_tweets(api, screen_name=session['username'], count=10, service=service, client=datastore_client)
+
+    # Methos = get here!
+        if len(tweet_replies) != 0:
+            page = int(request.args.get('page', 1))
+            per_page = 1
+            offset = (page - 1) * per_page
+
+            search = False
+            q = request.args.get('q')
+            if q:
+                search = True
+            (pagination_tweet, number) = get_users(tweet_replies, offset=offset, per_page=per_page)
+            pagination = Pagination(
+                page=page, per_page=per_page, total=len(tweet_replies),
+                css_framework='bootstrap3')
+            return render_template('app.html',
+                                username=session['username'],
+                                len=len(pagination_tweet),
+                                users=pagination_tweet,
+                                page=page,
+                                per_page=per_page,
+                                pagination=pagination
+                                )
+        # TODO: how to deal w/ ?
+        else:
+            return render_template('app.html',
+                username=session['username'],
+                                len=len(pagination_tweet),
+                                users=pagination_tweet,
+                                page=page,
+                                per_page=per_page,
+                                pagination=pagination)
+
+        # TODO 10.17: if method == 'POST'
+        # add new muted to muted list
 
 @app.route('/cron/bm') # can we pass argument to cron functions? and let it cron in separate threads
 def cron_bm():

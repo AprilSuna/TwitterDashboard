@@ -70,6 +70,11 @@ def store_reply(client, reply_to_id, reply_to_name,
     entity['threat'] = threat
     entity['sexually_explicit'] = sexually_explicit
     entity['flirtation'] = flirtation
+    # Set 0!!!!!
+    # entity['Harassment'] = 0
+    # entity['Directed'] = 0
+    # client.put(entity)
+    # print('Saved', entity.key.name, entity)
     client.put(entity)
     print('Saved', entity.key.kind, entity.key.name, entity['text'])
     # pprint(entity)
@@ -203,21 +208,6 @@ def store_bm(client, user_id, bm_ids):
     # pprint(entity)
 
 
-
-
-
-
-
-
-
-
-
-=======
-    entity['Harassment'] = 0
-    entity['Directed'] = 0
-    client.put(entity)
-    print('Saved', entity.key.name, entity)
-
 def store_label(client, reply_id, Harassment, Directed):
     kind = 'tweets'
     name = reply_id
@@ -227,4 +217,3 @@ def store_label(client, reply_id, Harassment, Directed):
     entity['Directed'] = Directed
     client.put(entity)
     print('Saved Label', entity.key.name, entity)
->>>>>>> april
