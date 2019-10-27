@@ -95,7 +95,7 @@ def store_tweet(client, user_id, tweet_id, user_name, tweet, tweet_hashtags): # 
     print('Saved', entity.key.kind, entity.key.name, entity['tweet'])
     # pprint(entity)
 
-def get_initial_tweets(api, screen_name, count, service, client): # old version in StreamListener
+def get_initial_tweets(api, screen_name, count, service, client): 
     print('==================== get_initial_tweets ====================')
     # only select tweets that have replies (would be hard for testing)
     tweets = api.user_timeline(screen_name=screen_name, count=count) # max count = 200
@@ -136,8 +136,8 @@ def get_initial_tweets(api, screen_name, count, service, client): # old version 
     # option 1: sample by perspective scores
     # tweet_replies = get_samples_1(tweet_replies)
 
-    # option 2: group by reply users, threshold at 5
-    # tweet_replies = get_samples_2(tweet_replies)
+    # option 2: group by reply users
+    tweet_replies = get_samples_2(tweet_replies)
     print(tweet_replies)
     return tweet_replies
              
@@ -194,8 +194,13 @@ def get_samples_2(tweet_replies):
     tweet_replies = tweet_replies.to_dict('records')
     return tweet_replies
 
-def store_bm(client, user_id, bm_ids):
+def store_bm(api, client, user_id):
     print('==================== store_bm ====================')
+    bm_ids = set()
+    for i in api.blocks_ids():
+        bm_ids.add(str(i))
+    for i in api.mutes_ids():
+        bm_ids.add(str(i))
     kind = 'bm' 
     name = user_id
     task_key = client.key(kind, name)
@@ -206,7 +211,28 @@ def store_bm(client, user_id, bm_ids):
     client.put(entity)
     print('Saved', entity.key.kind, entity.key.name, entity['bm_ids'])
     # pprint(entity)
+    return bm_ids
 
+def store_replier_network(api, client, user_id, reply_user_ids, bm_ids):
+    muted_friend_counts = []
+    for ruid in reply_user_ids:
+        cnt = 0
+        friends = api.friend_ids(id=ruid)
+        for f in friends:
+            if f in bm_ids:
+                cnt += 1
+        muted_friend_counts.append(cnt)
+    assert len(muted_friend_counts) == len(reply_user_ids)
+    # save reply user network feature to database
+    for ruid, cnt in list(zip(reply_user_ids, muted_friend_counts)):
+        kind = user_id
+        name = ruid
+        task_key = client.key(kind, name)
+        entity = datastore.Entity(key=task_key)
+        entity['muted_friend_counts'] = cnt
+        client.put(entity)
+        print('Saved', entity.key.kind, entity.key.name, entity['muted_friend_counts'])
+    
 
 def store_label(client, reply_id, Harassment, Directed):
     kind = 'tweets'

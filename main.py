@@ -157,18 +157,15 @@ def initial():
         except:
             print('error')
 
-        # # get initial block and mute ids
-        # bm_ids = set()
-        # for i in api.blocks_ids():
-        #     bm_ids.add(str(i))
-        # for i in api.mutes_ids():
-        #     bm_ids.add(str(i))
-        # # store to db for further update
-        # store_bm(datastore_client, user.id_str, bm_ids)
+        # get initial block and mute ids, store to db for further update
+        # also needed for network feature extraction
+        bm_ids = store_bm(api, datastore_client, user.id_str)
         # scrape initial set of tweets for labeling
         tweet_replies = get_initial_tweets(api, screen_name=session['username'], count=10, service=service, client=datastore_client)
+        # check how many friends of the reply user is muted by the poster
+        reply_user_ids = list(set([t['reply_user_id'] for t in tweet_replies]))
+        store_replier_network(api, datastore_client, user.id_str, reply_user_ids, bm_ids)
 
-    # Methos = get here!
         if len(tweet_replies) != 0:
             page = int(request.args.get('page', 1))
             per_page = 1
@@ -179,9 +176,7 @@ def initial():
             if q:
                 search = True
             (pagination_tweet, number) = get_users(tweet_replies, offset=offset, per_page=per_page)
-            pagination = Pagination(
-                page=page, per_page=per_page, total=len(tweet_replies),
-                css_framework='bootstrap3')
+            pagination = Pagination(page=page, per_page=per_page, total=len(tweet_replies), css_framework='bootstrap3')
             return render_template('app.html',
                                 username=session['username'],
                                 len=len(pagination_tweet),
@@ -190,7 +185,7 @@ def initial():
                                 per_page=per_page,
                                 pagination=pagination
                                 )
-        # TODO: how to deal w/ ?
+        # TODO: how to deal w/ empty content?
         else:
             return render_template('app.html',
                 username=session['username'],
@@ -206,41 +201,41 @@ def initial():
 @app.route('/cron/bm') # can we pass argument to cron functions? and let it cron in separate threads
 def cron_bm():
     print('==================== enter cron ====================')
-    # user_list, token_list, secret_list = [], [], []
-    # query = datastore_client.query(kind='user_file')
-    # local_users = query.fetch()
-    # # if len(local_users) <= 0: # type is iterator (of course it is)
-    # #     print('return?')
-    # #     return
-    # for user in local_users:
-    #     user_list.append(user['twitter_id'])
-    #     token_list.append(user['access_token'])
-    #     secret_list.append(user['access_token_secret'])
-    #     # assert
-    # print('# total users:', len(user_list))
-    # for user in list(zip(user_list, token_list, secret_list)):
-    #     user_id, token, token_secret = user 
-    #     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
-    #     auth.set_access_token(token, token_secret)
-    #     api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
-    #     bm_ids = set()
-    #     for i in api.blocks_ids():
-    #         bm_ids.add(str(i))
-    #     for i in api.mutes_ids():
-    #         bm_ids.add(str(i))   
-    #     key = datastore_client.key('bm', user_id)
-    #     entity = datastore_client.get(key)
-    #     if not entity:
-    #         print('== initial store ==')
-    #         kind = 'bm' 
-    #         name = user_id
-    #         bm_key = datastore_client.key(kind, name)
-    #         entity = datastore.Entity(key=bm_key)
-    #     else:
-    #         print('== update bm ==')
-    #     entity['bm_ids'] = list(bm_ids) 
-    #     datastore_client.put(entity)
-    #     print('Saved', entity.key.kind, entity.key.name, entity['bm_ids'])
+    user_list, token_list, secret_list = [], [], []
+    query = datastore_client.query(kind='user_file')
+    local_users = query.fetch()
+    # if len(local_users) <= 0: # type is iterator (of course it is)
+    #     print('return?')
+    #     return
+    for user in local_users:
+        user_list.append(user['twitter_id'])
+        token_list.append(user['access_token'])
+        secret_list.append(user['access_token_secret'])
+        # assert
+    print('# total users:', len(user_list))
+    for user in list(zip(user_list, token_list, secret_list)):
+        user_id, token, token_secret = user 
+        auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
+        auth.set_access_token(token, token_secret)
+        api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+        bm_ids = set()
+        for i in api.blocks_ids():
+            bm_ids.add(str(i))
+        for i in api.mutes_ids():
+            bm_ids.add(str(i))   
+        key = datastore_client.key('bm', user_id)
+        entity = datastore_client.get(key)
+        if not entity:
+            print('== initial store ==')
+            kind = 'bm' 
+            name = user_id
+            bm_key = datastore_client.key(kind, name)
+            entity = datastore.Entity(key=bm_key)
+        else:
+            print('== update bm ==')
+        entity['bm_ids'] = list(bm_ids) 
+        datastore_client.put(entity)
+        print('Saved', entity.key.kind, entity.key.name, entity['bm_ids'])
     return
 
 
