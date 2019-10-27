@@ -135,6 +135,7 @@ def initial():
                     Harassment,
                     Directed
                 )
+        # TODO: add new muted to muted list
     else:
         # set up search api
         token, token_secret = session['token']
@@ -165,7 +166,10 @@ def initial():
         # check how many friends of the reply user is muted by the poster
         reply_user_ids = list(set([t['reply_user_id'] for t in tweet_replies]))
         store_replier_network(api, datastore_client, user.id_str, reply_user_ids, bm_ids)
+        reply_user_info = api.lookup_users(user_ids=reply_user_ids)
 
+        # TODO: clean up and move to functions.py
+        # TODO: display reply user selected info
         if len(tweet_replies) != 0:
             page = int(request.args.get('page', 1))
             per_page = 1
@@ -195,10 +199,8 @@ def initial():
                                 per_page=per_page,
                                 pagination=pagination)
 
-        # TODO 10.17: if method == 'POST'
-        # add new muted to muted list
 
-@app.route('/cron/bm') # can we pass argument to cron functions? and let it cron in separate threads
+@app.route('/cron/bm')
 def cron_bm():
     print('==================== enter cron ====================')
     user_list, token_list, secret_list = [], [], []
@@ -225,14 +227,14 @@ def cron_bm():
             bm_ids.add(str(i))   
         key = datastore_client.key('bm', user_id)
         entity = datastore_client.get(key)
-        if not entity:
-            print('== initial store ==')
-            kind = 'bm' 
-            name = user_id
-            bm_key = datastore_client.key(kind, name)
-            entity = datastore.Entity(key=bm_key)
-        else:
-            print('== update bm ==')
+        # if not entity:
+        #     print('== initial store ==')
+        #     kind = 'bm' 
+        #     name = user_id
+        #     bm_key = datastore_client.key(kind, name)
+        #     entity = datastore.Entity(key=bm_key)
+        # else:
+        #     print('== update bm ==')
         entity['bm_ids'] = list(bm_ids) 
         datastore_client.put(entity)
         print('Saved', entity.key.kind, entity.key.name, entity['bm_ids'])

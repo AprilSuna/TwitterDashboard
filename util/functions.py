@@ -211,17 +211,14 @@ def store_bm(api, client, user_id):
     client.put(entity)
     print('Saved', entity.key.kind, entity.key.name, entity['bm_ids'])
     # pprint(entity)
-    return bm_ids
+    return bm_ids # type is set
 
 def store_replier_network(api, client, user_id, reply_user_ids, bm_ids):
     muted_friend_counts = []
     for ruid in reply_user_ids:
-        cnt = 0
         friends = api.friend_ids(id=ruid)
-        for f in friends:
-            if f in bm_ids:
-                cnt += 1
-        muted_friend_counts.append(cnt)
+        muted = set(friends).intersection(bm_ids)
+        muted_friend_counts.append(len(muted))
     assert len(muted_friend_counts) == len(reply_user_ids)
     # save reply user network feature to database
     for ruid, cnt in list(zip(reply_user_ids, muted_friend_counts)):
@@ -233,7 +230,7 @@ def store_replier_network(api, client, user_id, reply_user_ids, bm_ids):
         client.put(entity)
         print('Saved', entity.key.kind, entity.key.name, entity['muted_friend_counts'])
     
-
+# TODO: change from store new records to update old records
 def store_label(client, reply_id, Harassment, Directed):
     kind = 'tweets'
     name = reply_id
