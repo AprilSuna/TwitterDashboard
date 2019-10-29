@@ -230,13 +230,11 @@ def store_replier_network(api, client, user_id, reply_user_ids, bm_ids):
         client.put(entity)
         print('Saved', entity.key.kind, entity.key.name, entity['muted_friend_counts'])
     
-# TODO: change from store new records to update old records
 def store_label(client, reply_id, Harassment, Directed):
     kind = 'tweets'
     name = reply_id
     task_key = client.key(kind, name)
     entity = client.get(task_key)
-    entity['Harassment'] = Harassment
-    entity['Directed'] = Directed
+    entity['Mute'] = Mute
     client.put(entity)
     print('Saved Label', entity.key.name, entity)
