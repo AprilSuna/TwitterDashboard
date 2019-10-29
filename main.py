@@ -121,19 +121,13 @@ def initial():
     if request.method == 'POST':
         if len(tweet_replies) != 0:
             for i in range(len(tweet_replies)):
-                nameH = 'Harassment' + str(i)
-                nameD = 'Directed' + str(i)
-                # tweet_replies[i]['Harassment'] = request.form[nameH]
-                # tweet_replies[i]['Directed'] = request.form[nameD]
-                Harassment = request.form[nameH]
-                Directed = request.form[nameD]
+                nameM = 'Mute' + str(i)
+                Mute = request.form[nameH]
                 print('User Print Here!')
-                print(Harassment, Directed)
                 store_label(
                     datastore_client, 
                     tweet_replies[i]['reply_id'], 
-                    Harassment,
-                    Directed
+                    Mute
                 )
     else:
         # set up search api

@@ -208,12 +208,11 @@ def store_bm(client, user_id, bm_ids):
     # pprint(entity)
 
 
-def store_label(client, reply_id, Harassment, Directed):
+def store_label(client, reply_id, Mute):
     kind = 'tweets'
     name = reply_id
     task_key = client.key(kind, name)
     entity = client.get(task_key)
-    entity['Harassment'] = Harassment
-    entity['Directed'] = Directed
+    entity['Mute'] = Mute
     client.put(entity)
     print('Saved Label', entity.key.name, entity)
