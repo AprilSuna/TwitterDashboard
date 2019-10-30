@@ -234,9 +234,20 @@ def cron_bm():
         print('Saved', entity.key.kind, entity.key.name, entity['bm_ids'])
     return
 
-
+# fake display user/label pair from models
+# returning user should directly start with login->dash (that's why need to set up api)
 @app.route("/dash")
 def dash():
+    token, token_secret = session['token']
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
+    auth.set_access_token(token, token_secret)
+    api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+    user = api.get_user(screen_name=session['username']) # session['username'] from login
+
+    key = datastore_client.key('bm', user.id_str)
+    entity = datastore_client.get(key)
+    muted_users = api.lookup_users(entity['bm_ids']) # list of user object (dict)
+
     return render_template('dash.html', len=1, result=[])
 
 
