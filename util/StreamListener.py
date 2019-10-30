@@ -1,25 +1,45 @@
 import tweepy
+from . functions import get_perspective, store_reply, store_tweet 
+
+
 class StreamListener(tweepy.StreamListener):
+    def __init__(self, service, client):
+        super(StreamListener, self).__init__()
+        self.service = service
+        self.client = client
+
     def on_status(self, status):
-        id_str = status.id_str
-        text = status.text
-        # hashtags = status.entities.hashtags
-        # symbols = status.entities.symbols
-        # user_mentions = status.entities.user_mentions
-        # in_reply_to_screen_name = status.in_reply_to_screen_name
-        # in_reply_to_status_id_str = status.in_reply_to_status_id_str
-        in_reply_to_user_id_str = status.in_reply_to_user_id_str
-        user_id_str = status.user.id_str
-        # user_screen_name = status.user.screen_name
-        # user_description = status.user.description
-        is_reply = False
-        if in_reply_to_user_id_str is not None:
-            is_reply = True
+        if status.in_reply_to_user_id_str is not None:
             print('is_reply')
-            # muted_user = api.create_mute(user_id_str)
-            print('muted', user_id_str)
-#         print(id_str, text)
-        print(status.text)
+            key = self.client.key(status.in_reply_to_user_id_str, status.in_reply_to_status_id_str) # context uid, tid
+            context = self.client.get(key)
+            toxic_dict = get_perspective(self.service, status.text)
+            store_reply(self.client,
+                        reply_to_id=status.in_reply_to_user_id_str, 
+                        reply_to_name=status.in_reply_to_screen_name, 
+                        context_id=status.in_reply_to_status_id_str, 
+                        context=context['tweet'], 
+                        context_hashtags=context['tweet_hashtags'], 
+                        reply_user_id=status.user.id_str, 
+                        reply_user_name=status.user.screen_name, 
+                        reply_id=status.id_str, 
+                        text=status.text, 
+                        reply_hashtags=status.entities['hashtags'],
+                        toxicity=toxic_dict['toxicity'], 
+                        identity_attack=toxic_dict['identity_attack'], 
+                        insult=toxic_dict['insult'], 
+                        profanity=toxic_dict['profanity'], 
+                        threat=toxic_dict['threat'], 
+                        sexually_explicit=toxic_dict['sexually_explicit'], 
+                        flirtation=toxic_dict['flirtation'])
+            # either pass to model now or run cron job (tensor) on training model
+        else:
+            store_tweet(self.client, 
+                        user_id=status.user.id_str,
+                        tweet_id=status.id_str,
+                        user_name=status.user.screen_name,
+                        tweet=status.text,
+                        tweet_hashtags=status.entities['hashtags'])
 
 
 

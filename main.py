@@ -1,10 +1,11 @@
-from flask import render_template, Flask, redirect, request, session
-from google.cloud import datastore
-from util.functions import alreadyExist, store_user_profile, hash_pbkdf2, store_tweets, store_label, get_users
-import tweepy
-import logging
-from flask_paginate import Pagination
+from flask import Flask, render_template, redirect, request, session
+from util.functions import *
 from util.StreamListener import StreamListener
+from googleapiclient import discovery
+from google.cloud import datastore
+import pandas as pd
+import tweepy, logging
+from flask_paginate import Pagination
 
 datastore_client = datastore.Client('twitterdashboard')
 
@@ -16,11 +17,17 @@ access_token = '364156861-cSyt6v8Rjg4n8aVxRqI7stklhtvv69raNR7X3Tp9'
 access_token_secret = 'q9AppxYixPtI7HAi4Fxxd2i6Nl6ESGDqzCVqVOOFjr0FB'
 consumer_key = '0IvIaXCm8CUHeuayBiFS3Blwd' 
 consumer_secret = 'WlgHUfC7waVlRrktuyySBRQHwVSBPFpxEud2hGY08i83NFXpNk'
+perspective_api_key = 'AIzaSyAQzy172qDSsB89r-8sKcRKoLKncsHq8eU'
 
 callback_uri = 'https://twitterdashboard.appspot.com/callback'
 request_token_url = 'https://api.twitter.com/oauth/request_token'
 authorization_url = 'https://api.twitter.com/oauth/authorize'
 access_token_url = 'https://api.twitter.com/oauth/access_token'
+
+datastore_client = datastore.Client('twitterdashboard')
+service = discovery.build('commentanalyzer', 'v1alpha1', developerKey=perspective_api_key)
+app = Flask(__name__)
+app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
 
 
 @app.route('/', methods=['POST', 'GET'])
@@ -38,17 +45,17 @@ def login():
         session['password'] = request.form.get("password")
         if len(session['username']) != 0:
             loaded = True
-            key = datastore_client.key("user_file", session['username'])
-            entity = datastore_client.get(key)
-            print(entity)
-            if not entity:
-                print("No username found")
-                error = 'Invalid username'
-                loaded = False
-            elif entity["saltedPw"] != hash_pbkdf2(session['password'], entity['salt']):
-                print("Please use make sure your password is correct!")
-                error = 'Invalid password'
-                loaded = False
+            # key = datastore_client.key("user_file", session['username'])
+            # entity = datastore_client.get(key)
+            # print(entity)
+            # if not entity:
+            #     print('Invalid username')
+            #     error = "No username found"
+            #     loaded = False
+            # elif entity["saltedPw"] != hash_pbkdf2(session['password'], entity['salt']):
+            #     print('Invalid password')
+            #     error = "Please use make sure your password is correct!"
+            #     loaded = False
     if loaded:
         return redirect('/dash')
     else:
@@ -68,10 +75,9 @@ def register():
             if session['password'] != rePassword:
                 error = "Make sure the passwords match with each other."
                 loaded = False
-            if alreadyExist(datastore_client, session['username']):
-                error = "Ooops! The username has already exist, please use another!"
-                loaded = False
-            # store_user_profile(datastore_client, session['username'], session['password'])
+            # if alreadyExist(datastore_client, session['username']):
+            #     error = "Ooops! The username has already exist, please use another!"
+            #     loaded = False
     if loaded:
         return redirect('/auth')
     else:
@@ -104,89 +110,133 @@ def callback():
     session['token'] = (auth.access_token, auth.access_token_secret)
     logging.info(auth.access_token, auth.access_token_secret)
     # save access_token, access_token_secret to datastore for reuse
-    store_user_profile(datastore_client, session['username'], session['password'], auth.access_token, auth.access_token_secret)
+    # store_user_profile(datastore_client, session['username'], session['password'], auth.access_token, auth.access_token_secret)
 
     return redirect('/app')
 
 
-@app.route('/app', methods=['POST', 'GET']) 
-def get_tweets(): # old version in StreamListener
-    token, token_secret = session['token']
-    # set up search api
-    auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
-    auth.set_access_token(token, token_secret)
-    api = tweepy.API(auth)
-
-    # set up streaming api with new thread
-    print('start streaming for', session['username'])
-    stream = tweepy.Stream(auth=api.auth, listener=StreamListener())
-    user = api.get_user(screen_name=session['username'])
-    stream.filter(follow=[user.id_str], is_async=True)
-
-    # scrape initial set of tweets
-    # only select tweets that have replies (would be hard for testing)
-    tweets = api.user_timeline(screen_name=session['username'], count=10) # max count = 200
-    tweet_replies = []
-    for tweet in tweets:
-        tmp = {}
-        tmp['tid'] = tweet.id_str
-        tmp['userid'] = tweet.user.id_str
-        tmp['context'] = tweet.text
-        tmp['hashtag'] = tweet.entities['hashtags']
-        tmp['reply'] = []
-        for reply in tweepy.Cursor(api.search, q=session['username'], since_id=tweet.id_str, result_type="mixed", count=2).items(2):
-            if reply.in_reply_to_status_id_str == tweet.id_str:
-                tmp['reply']= {'tid': reply.id_str, 'uid': reply.user.id_str, 'uname': reply.user.screen_name, 'reply': reply.text}
-    #           tweet_replies used for display in dash.html
-                tweet_replies.append(tmp.copy())
-    #           store to database & for training
-                store_tweets(
-                        datastore_client, tmp['tid'], 
-                        reply_to_id=tmp['userid'],
-                        reply_to_name=session['username'], 
-                        context=tmp['context'], 
-                        context_hashtags=tmp['hashtag'], 
-                        reply_id=tmp['reply']['tid'],
-                        reply_user_id=tmp['reply']['uid'], 
-                        reply_user_name=tmp['reply']['uname'], 
-                        text=tmp['reply']['reply']
-                        )
+@app.route('/app') # rate limit, might use stream api
+def initial():
+    # TODO: Change to Mute labeling!!!
     if request.method == 'POST':
         if len(tweet_replies) != 0:
             for i in range(len(tweet_replies)):
-                nameH = 'Harassment' + str(i)
-                nameD = 'Directed' + str(i)
-                # tweet_replies[i]['Harassment'] = request.form[nameH]
-                # tweet_replies[i]['Directed'] = request.form[nameD]
-                Harassment = request.form[nameH]
-                Directed = request.form[nameD]
+                nameM = 'Mute' + str(i)
+                Mute = request.form[nameH]
                 print('User Print Here!')
-                print(Harassment, Directed)
                 store_label(
                     datastore_client, 
-                    tweet_replies[i]['reply']['tid'], 
-                    Harassment,
-                    Directed
+                    tweet_replies[i]['reply_id'], 
+                    Mute
                 )
+    else:
+        # set up search api
+        token, token_secret = session['token']
+        auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
+        auth.set_access_token(token, token_secret)
+        api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
 
-    if len(tweet_replies) != 0:
+        # set up streaming api with new thread
+        print('start streaming for', session['username'])
+        stream = tweepy.Stream(auth=api.auth, listener=StreamListener(service, datastore_client))
+        user = api.get_user(screen_name=session['username'])
+        stream.filter(follow=[user.id_str], is_async=True)
+        # update user profile table with user twitter id (needed for cron job)
+        print('update local user with twitter id')
+        user_key = datastore_client.key('user_file', session['username'])
+        local_user = datastore_client.get(user_key)
+        try:
+            local_user['twitter_id'] = user.id_str
+            datastore_client.put(local_user)
+        except:
+            print('error')
+
+        # get initial block and mute ids, store to db for further update
+        # also needed for network feature extraction
+        bm_ids = store_bm(api, datastore_client, user.id_str)
+        # scrape initial set of tweets for labeling
+        tweet_replies = get_initial_tweets(api, screen_name=session['username'], count=10, service=service, client=datastore_client)
+        # check how many friends of the reply user is muted by the poster
+        reply_user_ids = list(set([t['reply_user_id'] for t in tweet_replies]))
+        store_replier_network(api, datastore_client, user.id_str, reply_user_ids, bm_ids)
+        reply_user_info = api.lookup_users(user_ids=reply_user_ids)
+
+        for t in tweet_replies:
+            reply_user_id = t['reply_user_id']
+            reply_user_info = api.lookup_users(user_ids=reply_user_id)
+            t[0]['profile_image_url'] = reply_user_info['profile_image_url']
+            t[0]['description'] = reply_user_info['description']
+
+
+        if len(tweet_replies) != 0:
         return render_template('app.html',
+                           username=session['username'],
+                           length=len(tweet_replies),
+                           tweet_replies=tweet_replies,
+                           title=title)
+        else:
+            return render_template('app.html',
                            username=session['username'],
                            length=len(tweet_replies),
                            users=tweet_replies,
                            title=title)
-    else:
-        return render_template('app.html')
-
-    # after labeling
-    # return render_template('dash.html')
-    # display for label
-    return render_template('app.html', len=len(tweet_replies), result=tweet_replies)
 
 
+@app.route('/cron/bm')
+def cron_bm():
+    print('==================== enter cron ====================')
+    user_list, token_list, secret_list = [], [], []
+    query = datastore_client.query(kind='user_file')
+    local_users = query.fetch()
+    # if len(local_users) <= 0: # type is iterator (of course it is)
+    #     print('return?')
+    #     return
+    for user in local_users:
+        user_list.append(user['twitter_id'])
+        token_list.append(user['access_token'])
+        secret_list.append(user['access_token_secret'])
+        # assert
+    print('# total users:', len(user_list))
+    for user in list(zip(user_list, token_list, secret_list)):
+        user_id, token, token_secret = user 
+        auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
+        auth.set_access_token(token, token_secret)
+        api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+        bm_ids = set()
+        for i in api.blocks_ids():
+            bm_ids.add(str(i))
+        for i in api.mutes_ids():
+            bm_ids.add(str(i))   
+        key = datastore_client.key('bm', user_id)
+        entity = datastore_client.get(key)
+        # if not entity:
+        #     print('== initial store ==')
+        #     kind = 'bm' 
+        #     name = user_id
+        #     bm_key = datastore_client.key(kind, name)
+        #     entity = datastore.Entity(key=bm_key)
+        # else:
+        #     print('== update bm ==')
+        entity['bm_ids'] = list(bm_ids) 
+        datastore_client.put(entity)
+        print('Saved', entity.key.kind, entity.key.name, entity['bm_ids'])
+    return
+
+# fake display user/label pair from models
+# returning user should directly start with login->dash (that's why need to set up api)
 @app.route("/dash")
 def dash():
-    return render_template('dash.html', len=1, result = [])
+    token, token_secret = session['token']
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
+    auth.set_access_token(token, token_secret)
+    api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+    user = api.get_user(screen_name=session['username']) # session['username'] from login
+
+    key = datastore_client.key('bm', user.id_str)
+    entity = datastore_client.get(key)
+    muted_users = api.lookup_users(entity['bm_ids']) # list of user object (dict)
+
+    return render_template('dash.html', len=1, result=[])
 
 
 if __name__ == '__main__':
