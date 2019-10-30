@@ -20,13 +20,12 @@ def alreadyExist(client, username):
         return True
       
 def store_user_profile(client, username, password, access_token, access_token_secret):
-    kind = 'user_file'
+    kind = 'user'
     name = username
     task_key = client.key(kind, name)
     entity = datastore.Entity(key=task_key)
     salt = random_salt()
     saltedPw = hash_pbkdf2(password, salt)
-    entity['username'] = username
     entity['saltedPw'] = saltedPw
     entity['salt'] = salt
     entity['access_token'] = access_token

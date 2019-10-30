@@ -221,7 +221,15 @@ def initial():
 # returning user should directly start with login->dash (that's why need to set up api)
 @app.route("/dash")
 def dash():
-    token, token_secret = session['token']
+    if 'token' in session:
+        print('get tokens from session')
+        token, token_secret = session['token']
+    else:
+        # key = datastore_client.key('user_file', session['username'])
+        # local_user = datastore_client.get(key)
+        # token, token_secret = local_user['access_token'], local_user['access_token_secret']
+        print('get tokens from db')
+        token, token_secret = access_token, access_token_secret
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
     auth.set_access_token(token, token_secret)
     api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
