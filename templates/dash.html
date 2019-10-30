@@ -1,14 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
+<<<<<<< HEAD
     <title>Muted Users Dashboard</title>
+=======
+    {%if title%}
+    <title> {{ title }}</title>
+    {%else%}
+    <title> TwitterDashboard</title>
+    {% endif %} 
+    <h1> Generating your dashboard... Please wait</h1>
+>>>>>>> 9f6926196c8c576a35e7cc14f8738d532582da89
     <link rel="stylesheet" href="{{ url_for('static', filename='css/mainStyle.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/navbar.css') }}">
 </head>
 
-<h2>Self-label </h2>
+<h2>Muted user table</h2>
 
 <body>
+<<<<<<< HEAD
     <div id="section">
         <h2 class="serif"> Hi {{username}}! </h2>
         
@@ -31,4 +41,43 @@
     </div>
 </body>
   
+=======
+    <div class="wrapper">
+        <div class="navbar" template="/modules/navbar/navbar.html" id="main-navbar"></div>
+        <div class="mainbody" id="mainbody">
+            <div class="col1">
+                <div class="followers-box" template="/modules/followers-box/followers-box.html"></div>
+            </div>
+            <div class="col2">
+                <div template="/modules/tweet-box/tweet-box.html"></div>
+            </div>
+        </div>
+    </div>
+</body>
+
+<table class="bordered">
+    <thead>
+    <tr>
+        <th>avartar</th>        
+        <th>handle</th>
+        <th>description</th>
+        <th>following me?</th>
+        <th>followed by me?</th>
+    </tr>
+    </thead>
+    <ol>
+        {%for i in range(0, len)%}
+            <tr>
+            <td width="20%"><img src="{{result[i].profile_image_url_https}}" class="w-12 p-1 float-left image-thumbnail"></td>
+            <td width="20%"><a href="https://twitter.com/{{result[i]['screen_name']}}">{{result[i]['screen_name']}}</a></td>
+            <td width="20%">{{result[i]['description']}}</td>
+            <td width="20%">{{result[i]['followed_by']}}</td>
+            <td width="20%">{{result[i]['following']}}</td>
+            </tr>   
+        {%endfor%}
+  
+    </ol>  
+
+</table>
+>>>>>>> 9f6926196c8c576a35e7cc14f8738d532582da89
 </html>

@@ -39,6 +39,7 @@
       <p> Do you want to mute this user or not?</p>
       <p>
             <div class="radio">
+<<<<<<< HEAD
                 <label><input type="radio" id="Mute" name="{{'mute' + i|string}}" value="0">Yes</label>
             </div>
             <div class="radio">
@@ -47,6 +48,16 @@
         </p>
       {% endfor %}
       <div id="foo">
+=======
+                <label><input type="radio" id="Mute" name="{{'mute' + i|string}}" value="1">Yes</label>
+            </div>
+            <div class="radio">
+                <label><input type="radio" id="Mute" name="{{'mute' + i|string}}" value="0">No</label>
+            </div>
+        </p>
+      {% endfor %}
+      <div>
+>>>>>>> 9f6926196c8c576a35e7cc14f8738d532582da89
           <input type=submit value=Submit>
       </div>
       </form>
