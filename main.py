@@ -170,26 +170,11 @@ def get_tweets(): # old version in StreamListener
                 )
 
     if len(tweet_replies) != 0:
-        page = int(request.args.get('page', 1))
-        per_page = 1
-        offset = (page - 1) * per_page
-
-        search = False
-        q = request.args.get('q')
-        if q:
-            search = True
-        (pagination_tweet, number) = get_users(tweet_replies, offset=offset, per_page=per_page)
-        pagination = Pagination(
-            page=page, per_page=per_page, total=len(tweet_replies),
-            css_framework='bootstrap3')
         return render_template('app.html',
-                            username=session['username'],
-                            len=len(pagination_tweet),
-                            users=pagination_tweet,
-                            page=page,
-                            per_page=per_page,
-                            pagination=pagination
-                            )
+                           username=session['username'],
+                           length=len(tweet_replies),
+                           users=tweet_replies,
+                           title=title)
     else:
         return render_template('app.html')
 
