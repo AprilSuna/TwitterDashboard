@@ -236,7 +236,7 @@ def dash():
     entity = datastore_client.get(key)
     muted_users = api.lookup_users(entity['bm_ids']) # list of user object (dict)
 
-    return render_template('dash.html', len=1, result=[])
+    return render_template('dash.html', len=len(muted_users), result=muted_users)
 
 
 if __name__ == '__main__':
