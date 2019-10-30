@@ -14,44 +14,41 @@
     </div>
     <div id="section">
         <h2 class="serif"> Hi {{username}}! </h2>
+        <form method="POST">
+        {% for i in range(length) %} 
+        <img src = {{tweet_replies[i][0]['profile_image_url']}}>
+        <p> {{tweet_replies[i][0]['description']}} </p>
         <div class="table-responsive">
             <table id="selfLabel">
                 <thead>
                     <tr>
-                        <th>  #  </th>
                         <th>Reply</th>
                         <th>context</th>
-                        <th>Reply_Username</th>
-                        <th>Mute?</th>
                     </tr>
                 </thead>
             <tbody>
-            <form method="POST">
-            {% for user in users %}
+            {% for tweet in tweet_replies[i]%}
             <tr>
-              <td> {{ loop.index + (page - 1) * per_page }} </td>
-              <td>{{user['text']}}</td>
-              <td>{{user['context']}}</td>
-              <td>{{user['reply_user_name']}}</td>
-              <td>
-                <p>
-                    <div class="radio">
-                        <label><input type="radio" id="Mute" name="{{'mute' + number|string}}" value="0">Yes</label>
-                    </div>
-                    <div class="radio">
-                        <label><input type="radio" id="Mute" name="{{'mute' + number|string}}" value="1">No</label>
-                    </div>
-                </p>
-              </td>
+              <td>{{tweet['text']}}</td>
+              <td>{{tweet['context']}}</td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
+      <p> Do you want to mute this user or not?</p>
+      <p>
+            <div class="radio">
+                <label><input type="radio" id="Mute" name="{{'mute' + i|string}}" value="0">Yes</label>
+            </div>
+            <div class="radio">
+                <label><input type="radio" id="Mute" name="{{'mute' + i|string}}" value="1">No</label>
+            </div>
+        </p>
+      {% endfor %}
       <div id="foo">
-          {{ pagination.links }}
           <input type=submit value=Submit>
-      </div>、
+      </div>
       </form>
     </div>
   </body>
