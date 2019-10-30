@@ -2,7 +2,7 @@ from flask import Flask, render_template, redirect, request, session
 from util.functions import *
 from util.StreamListener import StreamListener
 from googleapiclient import discovery
-from google.cloud import datastore
+# from google.cloud import datastore
 import pandas as pd
 import tweepy, logging
 from flask_paginate import Pagination
@@ -115,21 +115,23 @@ def callback():
     return redirect('/app')
 
 
-@app.route('/app') # rate limit, might use stream api
+@app.route('/app', methods=['POST', 'GET'])
 def initial():
-    # TODO: Change to Mute labeling!!!
     if request.method == 'POST':
-        if len(tweet_replies) != 0:
-            for i in range(len(tweet_replies)):
-                nameM = 'Mute' + str(i)
-                Mute = request.form[nameH]
-                print('User Print Here!')
-                store_label(
-                    datastore_client, 
-                    tweet_replies[i]['reply_id'], 
-                    Mute
-                )
-        # TODO: add new muted to muted list
+        muted = []
+        for i, t in enumerate(tweet_replies):
+            nameM = 'Mute' + str(i)
+            Mute = request.form[nameH]
+            print('User Print Here!')
+            if Mute:
+                api.create_mute(t[0]['reply_user_id'])
+            store_bm(api, datastore_client, session['user_id'])
+            # store_label(
+            #     datastore_client, 
+            #     tweet_replies[i]['reply_id'], 
+            #     Mute
+            # )
+
     else:
         # set up search api
         token, token_secret = session['token']
@@ -141,6 +143,7 @@ def initial():
         print('start streaming for', session['username'])
         stream = tweepy.Stream(auth=api.auth, listener=StreamListener(service, datastore_client))
         user = api.get_user(screen_name=session['username'])
+        session['user_id'] = user.id_str
         stream.filter(follow=[user.id_str], is_async=True)
         # update user profile table with user twitter id (needed for cron job)
         print('update local user with twitter id')
@@ -160,38 +163,18 @@ def initial():
         # check how many friends of the reply user is muted by the poster
         reply_user_ids = list(set([t['reply_user_id'] for t in tweet_replies]))
         store_replier_network(api, datastore_client, user.id_str, reply_user_ids, bm_ids)
-        reply_user_info = api.lookup_users(user_ids=reply_user_ids)
 
-        # TODO: clean up and move to functions.py
-        # TODO: display reply user selected info
-        if len(tweet_replies) != 0:
-            page = int(request.args.get('page', 1))
-            per_page = 1
-            offset = (page - 1) * per_page
+        for t in tweet_replies: # t = list of dict
+            reply_user_id = t[0]['reply_user_id']
+            reply_user_info = api.get_user(user_ids=reply_user_id)
+            t[0]['profile_image_url'] = reply_user_info['profile_image_url']
+            t[0]['description'] = reply_user_info['description']
 
-            search = False
-            q = request.args.get('q')
-            if q:
-                search = True
-            (pagination_tweet, number) = get_users(tweet_replies, offset=offset, per_page=per_page)
-            pagination = Pagination(page=page, per_page=per_page, total=len(tweet_replies), css_framework='bootstrap3')
-            return render_template('app.html',
-                                username=session['username'],
-                                len=len(pagination_tweet),
-                                users=pagination_tweet,
-                                page=page,
-                                per_page=per_page,
-                                pagination=pagination
-                                )
-        # TODO: how to deal w/ empty content?
-        else:
-            return render_template('app.html',
-                username=session['username'],
-                                len=len(pagination_tweet),
-                                users=pagination_tweet,
-                                page=page,
-                                per_page=per_page,
-                                pagination=pagination)
+        return render_template('app.html',
+                           username=session['username'],
+                           length=len(tweet_replies),
+                           tweet_replies=tweet_replies,
+                           title=title)
 
 
 @app.route('/cron/bm')
@@ -232,7 +215,7 @@ def cron_bm():
         entity['bm_ids'] = list(bm_ids) 
         datastore_client.put(entity)
         print('Saved', entity.key.kind, entity.key.name, entity['bm_ids'])
-    return
+    return None
 
 # fake display user/label pair from models
 # returning user should directly start with login->dash (that's why need to set up api)
@@ -258,8 +241,9 @@ def dash():
         res['following'] = friendship.following
         res['followed_by'] = friendship.followed_by
 
-    return render_template('dash.html', len=len(muted_users, result=result)
+    return render_template('dash.html', len=len(muted_users, result=result))
 
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8080, debug=True)
+

@@ -190,9 +190,11 @@ def get_samples_1(tweet_replies):
 
 def get_samples_2(tweet_replies):
     tweet_replies = pd.DataFrame.from_records(tweet_replies)
-    tweet_replies = tweet_replies.groupby('reply_user_id').apply(lambda x: x.sample(frac=0.5))    
-    tweet_replies = tweet_replies.to_dict('records')
-    return tweet_replies
+    tweet_replies = tweet_replies.groupby('reply_user_id').apply(lambda x: x.sample(frac=0.5))
+    reply_user_ids = list(set(tweet_replies['reply_user_id'].tolist()))
+    for ruid in reply_user_ids:
+        res.append(tweet_replies[tweet_replies['reply_user_id']==ruid].to_dict('records'))
+    return res # list of (list of dict = tweet replies for same ruid)
 
 def store_bm(api, client, user_id):
     print('==================== store_bm ====================')
@@ -238,3 +240,4 @@ def store_label(client, reply_id, Mute):
     entity['Mute'] = Mute
     client.put(entity)
     print('Saved Label', entity.key.name, entity)
+
