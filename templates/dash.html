@@ -1,83 +1,53 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Self-label Dashboard</title>
+    {%if title%}
+    <title> {{ title }}</title>
+    {%else%}
+    <title> TwitterDashboard</title>
+    {% endif %} 
+    <h1> Generating your dashboard... Please wait</h1>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/mainStyle.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/navbar.css') }}">
 </head>
 
-<h2>Self-label </h2>
+<h2>Muted user table</h2>
 
 <body>
-
     <div class="wrapper">
-            <div class="navbar" template="/modules/navbar/navbar.html" id="main-navbar"></div>
-
+        <div class="navbar" template="/modules/navbar/navbar.html" id="main-navbar"></div>
         <div class="mainbody" id="mainbody">
             <div class="col1">
-                <!-- Followers Box Begin -->
                 <div class="followers-box" template="/modules/followers-box/followers-box.html"></div>
-                <!-- Followers Box End -->
             </div>
             <div class="col2">
                 <div template="/modules/tweet-box/tweet-box.html"></div>
             </div>
-            <!-- <div class="col3">col 3</div> -->
         </div>
     </div>
-
 </body>
 
 <table class="bordered">
     <thead>
-
     <tr>
-        <th>#</th>        
-        <th>Reply</th>
-        <th>Tweet</th>
-        <th>Reply User</th>
-        <th>Mute ?</th>
+        <th>avartar</th>        
+        <th>handle</th>
+        <th>description</th>
+        <th>following me?</th>
+        <th>followed by me?</th>
     </tr>
     </thead>
     <ol>
         {%for i in range(0, len)%}
             <tr>
-            <td width="2%">{{i}}</td>
-            <td width="40%">
-                {{result[i]['reply']['reply']}}
-            </td>
-            <td width="40%">
-                {{result[i]['text']}}
-<!-- =======
-                {{result[i]['context']}}
->>>>>>> april -->
-            </td>
-            <td width="10%">
-                {{result[i]['reply']['uname']}}
-            </td>
-            <td width="8%">
-                <div class="radio">
-                    <label><input type="radio" id="Mute" name="{{'mute' + i|string}}" value="0">Yes</label>
-                </div>
-                <div class="radio">
-                    <label><input type="radio" id="Mute" name="{{'mute' + i|string}}" value="1">No</label>
-                </div>
-            </td>
+            <td width="25%"><img src="{{result.profile_image_url_https}}" class="w-12 p-1 float-left image-thumbnail"></td>
+            <td width="25%" href={{"https://twitter.com/"+result[i]['screen_name']}}>{{result[i]['screen_name']}}</td>
+            <td width="25%">{{result[i]['followed_by']}}</td>
+            <td width="25%">{{result[i]['following']}}</td>
             </tr>   
         {%endfor%}
   
     </ol>  
 
 </table>
-
-<!-- <html>
-<head>
-	{%if title%}
-	<title> {{ title }}</title>
-	{%else%}
-	<title> TwitterDashboard</title>
-	{% endif %} 
-	<h1> Generating your dashboard... Please wait</h1>
-</head>   -->
-
 </html>

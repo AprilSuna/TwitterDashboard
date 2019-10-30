@@ -247,8 +247,18 @@ def dash():
     key = datastore_client.key('bm', user.id_str)
     entity = datastore_client.get(key)
     muted_users = api.lookup_users(entity['bm_ids']) # list of user object (dict)
+    result = []
+    for mu in muted_users:
+        print('muted id:', mu.id_str)
+        res = {}
+        res['profile_image_url_https'] = mu.profile_image_url_https
+        res['screen_name'] = mu.screen_name
+        res['description'] = mu.description
+        friendship = api.show_friendship(source_id=user.id_str, target_id=mu.id_str)[0]
+        res['following'] = friendship.following
+        res['followed_by'] = friendship.followed_by
 
-    return render_template('dash.html', len=1, result=[])
+    return render_template('dash.html', len=len(muted_users, result=result)
 
 
 if __name__ == '__main__':
