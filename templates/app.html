@@ -39,14 +39,14 @@
       <p> Do you want to mute this user or not?</p>
       <p>
             <div class="radio">
-                <label><input type="radio" id="Mute" name="{{'mute' + i|string}}" value="0">Yes</label>
+                <label><input type="radio" id="Mute" name="{{'mute' + i|string}}" value="1">Yes</label>
             </div>
             <div class="radio">
-                <label><input type="radio" id="Mute" name="{{'mute' + i|string}}" value="1">No</label>
+                <label><input type="radio" id="Mute" name="{{'mute' + i|string}}" value="0">No</label>
             </div>
         </p>
       {% endfor %}
-      <div id="foo">
+      <div>
           <input type=submit value=Submit>
       </div>
       </form>

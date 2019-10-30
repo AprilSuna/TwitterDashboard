@@ -111,29 +111,33 @@ def callback():
 
 @app.route('/app', methods=['POST', 'GET'])
 def initial():
+    # set up search api
+    token, token_secret = session['token']
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
+    auth.set_access_token(token, token_secret)
+    api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+
     if request.method == 'POST':
         muted = []
-        for i, t in enumerate(tweet_replies):
-            nameM = 'Mute' + str(i)
-            Mute = request.form[nameH]
-            print('User Print Here!')
-            if Mute:
-                api.create_mute(t[0]['reply_user_id'])
+        for i, t in enumerate(session['tweet_replies']):
+            nameM = 'mute' + str(i)
+            mute = int(request.form[nameM])
+            if mute:
+                print('User selected mute!', t[0]['reply_user_id'])
+                muted_user = api.create_mute(t[0]['reply_user_id'])
+                muted.append(muted_user.id_str)
             # store_bm(api, datastore_client, session['user_id'])
-            store_bm(api, session['user_id'])
             # store_label(
             #     datastore_client, 
             #     tweet_replies[i]['reply_id'], 
             #     Mute
             # )
+        print('users muted in labeling session:', muted)
+        store_bm(api, session['user_id'])
+        del session['tweet_replies']
+        return redirect('/dash')
 
-    else:
-        # set up search api
-        token, token_secret = session['token']
-        auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
-        auth.set_access_token(token, token_secret)
-        api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
-
+    else:        
         # set up streaming api with new thread
         print('start streaming for', session['username'])
         stream = tweepy.Stream(auth=api.auth, listener=StreamListener(service))
@@ -155,6 +159,7 @@ def initial():
         bm_ids = store_bm(api, user.id_str)
         # scrape initial set of tweets for labeling
         tweet_replies = get_initial_tweets(api, screen_name=session['username'], count=10, service=service)
+        session['tweet_replies'] = tweet_replies
         # check how many friends of the reply user is muted by the poster
         reply_user_ids = list(set([t[0]['reply_user_id'] for t in tweet_replies]))
         store_replier_network(api, user.id_str, reply_user_ids, bm_ids)
@@ -237,8 +242,9 @@ def dash():
         friendship = api.show_friendship(source_id=user.id_str, target_id=mu.id_str)[0]
         res['following'] = friendship.following
         res['followed_by'] = friendship.followed_by
+        result.append(res)
 
-    return render_template('dash.html', len=len(muted_users, result=result))
+    return render_template('dash.html', len=len(muted_users), result=result)
 
 
 if __name__ == '__main__':

@@ -40,8 +40,8 @@
     <ol>
         {%for i in range(0, len)%}
             <tr>
-            <td width="20%"><img src="{{result.profile_image_url_https}}" class="w-12 p-1 float-left image-thumbnail"></td>
-            <td width="20%" href={{"https://twitter.com/"+result[i]['screen_name']}}>{{result[i]['screen_name']}}</td>
+            <td width="20%"><img src="{{result[i].profile_image_url_https}}" class="w-12 p-1 float-left image-thumbnail"></td>
+            <td width="20%"><a href="https://twitter.com/{{result[i]['screen_name']}}">{{result[i]['screen_name']}}</a></td>
             <td width="20%">{{result[i]['description']}}</td>
             <td width="20%">{{result[i]['followed_by']}}</td>
             <td width="20%">{{result[i]['following']}}</td>
