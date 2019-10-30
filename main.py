@@ -118,24 +118,6 @@ def initial():
     api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
 
     if request.method == 'POST':
-<<<<<<< HEAD
-        if len(tweet_replies) != 0:
-            for i in range(len(tweet_replies)):
-                nameM = 'Mute' + str(i)
-                Mute = request.form[nameH]
-                print('User Print Here!')
-                store_label(
-                    datastore_client, 
-                    tweet_replies[i]['reply_id'], 
-                    Mute
-                )
-    else:
-        # set up search api
-        token, token_secret = session['token']
-        auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
-        auth.set_access_token(token, token_secret)
-        api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
-=======
         muted = []
         for i, t in enumerate(session['tweet_replies']):
             nameM = 'mute' + str(i)
@@ -154,7 +136,6 @@ def initial():
         store_bm(api, session['user_id'])
         del session['tweet_replies']
         return redirect('/dash')
->>>>>>> 9f6926196c8c576a35e7cc14f8738d532582da89
 
     else:        
         # set up streaming api with new thread
@@ -180,20 +161,6 @@ def initial():
         tweet_replies = get_initial_tweets(api, screen_name=session['username'], count=10, service=service)
         session['tweet_replies'] = tweet_replies
         # check how many friends of the reply user is muted by the poster
-<<<<<<< HEAD
-        reply_user_ids = list(set([t['reply_user_id'] for t in tweet_replies]))
-        store_replier_network(api, datastore_client, user.id_str, reply_user_ids, bm_ids)
-        reply_user_info = api.lookup_users(user_ids=reply_user_ids)
-
-        for t in tweet_replies:
-            reply_user_id = t['reply_user_id']
-            reply_user_info = api.lookup_users(user_ids=reply_user_id)
-            t[0]['profile_image_url'] = reply_user_info['profile_image_url']
-            t[0]['description'] = reply_user_info['description']
-
-
-        if len(tweet_replies) != 0:
-=======
         reply_user_ids = list(set([t[0]['reply_user_id'] for t in tweet_replies]))
         store_replier_network(api, user.id_str, reply_user_ids, bm_ids)
 
@@ -203,61 +170,10 @@ def initial():
             t[0]['profile_image_url'] = reply_user_info.profile_image_url
             t[0]['description'] = reply_user_info.description
 
->>>>>>> 9f6926196c8c576a35e7cc14f8738d532582da89
         return render_template('app.html',
                            username=session['username'],
                            length=len(tweet_replies),
                            tweet_replies=tweet_replies,
-<<<<<<< HEAD
-                           title=title)
-        else:
-            return render_template('app.html',
-                           username=session['username'],
-                           length=len(tweet_replies),
-                           users=tweet_replies,
-                           title=title)
-
-
-@app.route('/cron/bm')
-def cron_bm():
-    print('==================== enter cron ====================')
-    user_list, token_list, secret_list = [], [], []
-    query = datastore_client.query(kind='user_file')
-    local_users = query.fetch()
-    # if len(local_users) <= 0: # type is iterator (of course it is)
-    #     print('return?')
-    #     return
-    for user in local_users:
-        user_list.append(user['twitter_id'])
-        token_list.append(user['access_token'])
-        secret_list.append(user['access_token_secret'])
-        # assert
-    print('# total users:', len(user_list))
-    for user in list(zip(user_list, token_list, secret_list)):
-        user_id, token, token_secret = user 
-        auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
-        auth.set_access_token(token, token_secret)
-        api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
-        bm_ids = set()
-        for i in api.blocks_ids():
-            bm_ids.add(str(i))
-        for i in api.mutes_ids():
-            bm_ids.add(str(i))   
-        key = datastore_client.key('bm', user_id)
-        entity = datastore_client.get(key)
-        # if not entity:
-        #     print('== initial store ==')
-        #     kind = 'bm' 
-        #     name = user_id
-        #     bm_key = datastore_client.key(kind, name)
-        #     entity = datastore.Entity(key=bm_key)
-        # else:
-        #     print('== update bm ==')
-        entity['bm_ids'] = list(bm_ids) 
-        datastore_client.put(entity)
-        print('Saved', entity.key.kind, entity.key.name, entity['bm_ids'])
-    return
-=======
                            title='self-label')
 
 
@@ -300,7 +216,6 @@ def cron_bm():
 #         datastore_client.put(entity)
 #         print('Saved', entity.key.kind, entity.key.name, entity['bm_ids'])
 #     return None
->>>>>>> 9f6926196c8c576a35e7cc14f8738d532582da89
 
 # fake display user/label pair from models
 # returning user should directly start with login->dash (that's why need to set up api)
@@ -320,13 +235,6 @@ def dash():
     api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
     user = api.get_user(screen_name=session['username']) # session['username'] from login
 
-<<<<<<< HEAD
-    key = datastore_client.key('bm', user.id_str)
-    entity = datastore_client.get(key)
-    muted_users = api.lookup_users(entity['bm_ids']) # list of user object (dict)
-
-    return render_template('dash.html', len=len(muted_users), result=muted_users)
-=======
     # key = datastore_client.key('bm', user.id_str)
     # entity = datastore_client.get(key)
     # muted_users = api.lookup_users(entity['bm_ids']) # list of user object (dict)
@@ -345,7 +253,6 @@ def dash():
         result.append(res)
 
     return render_template('dash.html', len=len(muted_users), result=result)
->>>>>>> 9f6926196c8c576a35e7cc14f8738d532582da89
 
 
 if __name__ == '__main__':
