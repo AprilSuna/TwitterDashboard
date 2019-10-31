@@ -39,7 +39,7 @@ def login():
         session['password'] = request.form.get("password")
         if len(session['username']) != 0:
             loaded = True
-            key = datastore_client.key("user_file", session['username'])
+            key = datastore_client.key("user", session['username'])
             entity = datastore_client.get(key)
             print(entity)
             if not entity:
@@ -224,7 +224,7 @@ def dash():
         print('get tokens from session')
         token, token_secret = session['token']
     else:
-        key = datastore_client.key('user_file', session['username'])
+        key = datastore_client.key('user', session['username'])
         local_user = datastore_client.get(key)
         token, token_secret = local_user['access_token'], local_user['access_token_secret']
         print('get tokens from db')
