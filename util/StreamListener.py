@@ -2,10 +2,10 @@ import tweepy
 from . functions import get_perspective, store_reply, store_tweet 
 
 class StreamListener(tweepy.StreamListener):
-    def __init__(self, service):
+    def __init__(self, service, client):
         super(StreamListener, self).__init__()
         self.service = service
-        # self.client = client
+        self.client = client
 
     def on_status(self, status):
         if status.in_reply_to_user_id_str is not None:
@@ -13,7 +13,8 @@ class StreamListener(tweepy.StreamListener):
             key = self.client.key(status.in_reply_to_user_id_str, status.in_reply_to_status_id_str) # context uid, tid
             context = self.client.get(key)
             toxic_dict = get_perspective(self.service, status.text)
-            store_reply(reply_to_id=status.in_reply_to_user_id_str, 
+            store_reply(self.client,
+                        reply_to_id=status.in_reply_to_user_id_str, 
                         reply_to_name=status.in_reply_to_screen_name, 
                         context_id=status.in_reply_to_status_id_str, 
                         context=context['tweet'], 
@@ -32,7 +33,8 @@ class StreamListener(tweepy.StreamListener):
                         flirtation=toxic_dict['flirtation'])
             # either pass to model now or run cron job (tensor) on training model
         else:
-            store_tweet(user_id=status.user.id_str,
+            store_tweet(self.client, 
+                        user_id=status.user.id_str,
                         tweet_id=status.id_str,
                         user_name=status.user.screen_name,
                         tweet=status.text,

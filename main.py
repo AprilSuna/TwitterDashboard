@@ -2,7 +2,7 @@ from flask import Flask, render_template, redirect, request, session
 from util.functions import *
 from util.StreamListener import StreamListener
 from googleapiclient import discovery
-# from google.cloud import datastore
+from google.cloud import datastore
 import pandas as pd
 import tweepy, logging
 
@@ -13,12 +13,12 @@ consumer_key = '0IvIaXCm8CUHeuayBiFS3Blwd'
 consumer_secret = 'WlgHUfC7waVlRrktuyySBRQHwVSBPFpxEud2hGY08i83NFXpNk'
 perspective_api_key = 'AIzaSyAQzy172qDSsB89r-8sKcRKoLKncsHq8eU'
 
-callback_uri = 'https://31b69d8d.ngrok.io/callback'
+callback_uri = 'https://twitterdashboard.appspot.com/callback'
 request_token_url = 'https://api.twitter.com/oauth/request_token'
 authorization_url = 'https://api.twitter.com/oauth/authorize'
 access_token_url = 'https://api.twitter.com/oauth/access_token'
 
-# datastore_client = datastore.Client('twitterdashboard')
+datastore_client = datastore.Client('twitterdashboard')
 service = discovery.build('commentanalyzer', 'v1alpha1', developerKey=perspective_api_key)
 app = Flask(__name__)
 app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
@@ -39,17 +39,17 @@ def login():
         session['password'] = request.form.get("password")
         if len(session['username']) != 0:
             loaded = True
-            # key = datastore_client.key("user_file", session['username'])
-            # entity = datastore_client.get(key)
-            # print(entity)
-            # if not entity:
-            #     print('Invalid username')
-            #     error = "No username found"
-            #     loaded = False
-            # elif entity["saltedPw"] != hash_pbkdf2(session['password'], entity['salt']):
-            #     print('Invalid password')
-            #     error = "Please use make sure your password is correct!"
-            #     loaded = False
+            key = datastore_client.key("user_file", session['username'])
+            entity = datastore_client.get(key)
+            print(entity)
+            if not entity:
+                print('Invalid username')
+                error = "No username found"
+                loaded = False
+            elif entity["saltedPw"] != hash_pbkdf2(session['password'], entity['salt']):
+                print('Invalid password')
+                error = "Please use make sure your password is correct!"
+                loaded = False
     if loaded:
         return redirect('/dash')
     else:
@@ -69,9 +69,9 @@ def register():
             if session['password'] != rePassword:
                 error = "Make sure the passwords match with each other."
                 loaded = False
-            # if alreadyExist(datastore_client, session['username']):
-            #     error = "Ooops! The username has already exist, please use another!"
-            #     loaded = False
+            if alreadyExist(datastore_client, session['username']):
+                error = "Ooops! The username has already exist, please use another!"
+                loaded = False
     if loaded:
         return redirect('/auth')
     else:
@@ -104,7 +104,7 @@ def callback():
     session['token'] = (auth.access_token, auth.access_token_secret)
     logging.info(auth.access_token, auth.access_token_secret)
     # save access_token, access_token_secret to datastore for reuse
-    # store_user_profile(datastore_client, session['username'], session['password'], auth.access_token, auth.access_token_secret)
+    store_user_profile(datastore_client, session['username'], session['password'], auth.access_token, auth.access_token_secret)
 
     return redirect('/app')
 
@@ -126,43 +126,42 @@ def initial():
                 print('User selected mute!', t[0]['reply_user_id'])
                 muted_user = api.create_mute(t[0]['reply_user_id'])
                 muted.append(muted_user.id_str)
-            # store_bm(api, datastore_client, session['user_id'])
             # store_label(
             #     datastore_client, 
             #     tweet_replies[i]['reply_id'], 
             #     Mute
             # )
         print('users muted in labeling session:', muted)
-        store_bm(api, session['user_id'])
+        store_bm(api, datastore_client, session['user_id'])
         del session['tweet_replies']
         return redirect('/dash')
 
     else:        
         # set up streaming api with new thread
         print('start streaming for', session['username'])
-        stream = tweepy.Stream(auth=api.auth, listener=StreamListener(service))
+        stream = tweepy.Stream(auth=api.auth, listener=StreamListener(service, datastore_client))
         user = api.get_user(screen_name=session['username'])
         session['user_id'] = user.id_str
         stream.filter(follow=[user.id_str], is_async=True)
-        # # update user profile table with user twitter id (needed for cron job)
-        # print('update local user with twitter id')
-        # user_key = datastore_client.key('user_file', session['username'])
-        # local_user = datastore_client.get(user_key)
-        # try:
-        #     local_user['twitter_id'] = user.id_str
-        #     datastore_client.put(local_user)
-        # except:
-        #     print('error')
+        # update user profile table with user twitter id (needed for cron job)
+        print('update local user with twitter id')
+        user_key = datastore_client.key('user', session['username'])
+        local_user = datastore_client.get(user_key)
+        try:
+            local_user['twitter_id'] = user.id_str
+            datastore_client.put(local_user)
+        except:
+            print('error')
 
         # get initial block and mute ids, store to db for further update
         # also needed for network feature extraction
-        bm_ids = store_bm(api, user.id_str)
+        bm_ids = store_bm(api, datastore_client, user.id_str)
         # scrape initial set of tweets for labeling
-        tweet_replies = get_initial_tweets(api, screen_name=session['username'], count=10, service=service)
+        tweet_replies = get_initial_tweets(api, datastore_client, screen_name=session['username'], count=10, service=service)
         session['tweet_replies'] = tweet_replies
         # check how many friends of the reply user is muted by the poster
         reply_user_ids = list(set([t[0]['reply_user_id'] for t in tweet_replies]))
-        store_replier_network(api, user.id_str, reply_user_ids, bm_ids)
+        store_replier_network(api, datastore_client, user.id_str, reply_user_ids, bm_ids)
 
         for t in tweet_replies: # t = list of dict
             reply_user_id = t[0]['reply_user_id']
@@ -225,21 +224,21 @@ def dash():
         print('get tokens from session')
         token, token_secret = session['token']
     else:
-        # key = datastore_client.key('user_file', session['username'])
-        # local_user = datastore_client.get(key)
-        # token, token_secret = local_user['access_token'], local_user['access_token_secret']
+        key = datastore_client.key('user_file', session['username'])
+        local_user = datastore_client.get(key)
+        token, token_secret = local_user['access_token'], local_user['access_token_secret']
         print('get tokens from db')
-        token, token_secret = access_token, access_token_secret
+        # token, token_secret = access_token, access_token_secret
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
     auth.set_access_token(token, token_secret)
     api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
     user = api.get_user(screen_name=session['username']) # session['username'] from login
 
-    # key = datastore_client.key('bm', user.id_str)
-    # entity = datastore_client.get(key)
-    # muted_users = api.lookup_users(entity['bm_ids']) # list of user object (dict)
-    bm_ids = ['983642989959331840', '380749300', '44084633', '47459700', '15425377', '2316897812', '831732636070600706', '210927444']
-    muted_users = api.lookup_users(bm_ids)
+    key = datastore_client.key('bm', user.id_str)
+    entity = datastore_client.get(key)
+    muted_users = api.lookup_users(entity['bm_ids']) # list of user object (dict)
+    # bm_ids = ['983642989959331840', '380749300', '44084633', '47459700', '15425377', '2316897812', '831732636070600706', '210927444']
+    # muted_users = api.lookup_users(bm_ids)
     result = []
     for mu in muted_users:
         print('muted id:', mu.id_str)

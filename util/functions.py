@@ -1,4 +1,4 @@
-# from google.cloud import datastore
+from google.cloud import datastore
 from hashlib import pbkdf2_hmac
 from random import getrandbits
 import tweepy
@@ -40,19 +40,19 @@ def hash_pbkdf2(x, salt):
     return pbkdf2_hmac('sha256', x.encode('utf-8'), bytes.fromhex(salt), 100000).hex()
 
 
-def store_reply(reply_to_id, reply_to_name, 
+def store_reply(client, reply_to_id, reply_to_name, 
     context_id, context, context_hashtags, 
     reply_user_id, reply_user_name, reply_id, text, reply_hashtags,
     toxicity, identity_attack, insult, profanity, threat, sexually_explicit, flirtation):
     print('==================== store_reply ====================')
     kind = reply_to_id # context user id as table name
     name = reply_id  # reply id as unique identifier
-    # task_key = client.key(kind, name)
-    # entity = datastore.Entity(key=task_key)
+    task_key = client.key(kind, name)
+    entity = datastore.Entity(key=task_key)
     # for testing
-    entity = {}
-    entity['kind'] = reply_to_id
-    entity['name'] = context_id
+    # entity = {}
+    # entity['kind'] = reply_to_id
+    # entity['name'] = context_id
     entity['reply_to_name'] = reply_to_name
     entity['context_id'] = context_id
     entity['context'] = context
@@ -69,27 +69,27 @@ def store_reply(reply_to_id, reply_to_name,
     entity['threat'] = threat
     entity['sexually_explicit'] = sexually_explicit
     entity['flirtation'] = flirtation
-    # client.put(entity)
-    # print('Saved', entity.key.kind, entity.key.name, entity['text'])
-    pprint(entity)
+    client.put(entity)
+    print('Saved', entity.key.kind, entity.key.name, entity['text'])
+    # pprint(entity)
 
-def store_tweet(user_id, tweet_id, user_name, tweet, tweet_hashtags): # if it's an original tweet
+def store_tweet(client, user_id, tweet_id, user_name, tweet, tweet_hashtags): # if it's an original tweet
     print('==================== store_tweet ====================')
     kind = user_id # poster's id
     name = tweet_id    # poster's text
-    # task_key = client.key(kind, name)
-    # entity = datastore.Entity(key=task_key)
-    entity = {}
-    entity['kind'] = user_id
-    entity['name'] = tweet_id
+    task_key = client.key(kind, name)
+    entity = datastore.Entity(key=task_key)
+    # entity = {}
+    # entity['kind'] = user_id
+    # entity['name'] = tweet_id
     entity['screen_name'] = user_name
     entity['tweet'] = tweet
     entity['tweet_hashtags'] = tweet_hashtags
-    # client.put(entity)
-    # print('Saved', entity.key.kind, entity.key.name, entity['tweet'])
-    pprint(entity)
+    client.put(entity)
+    print('Saved', entity.key.kind, entity.key.name, entity['tweet'])
+    # pprint(entity)
 
-def get_initial_tweets(api, screen_name, count, service): 
+def get_initial_tweets(api, client, screen_name, count, service): 
     print('==================== get_initial_tweets ====================')
     # only select tweets that have replies (would be hard for testing)
     tweets = api.user_timeline(screen_name=screen_name, count=count) # max count = 200
@@ -119,7 +119,8 @@ def get_initial_tweets(api, screen_name, count, service):
                 # tweet_replies used for display in dash.html
                 tweet_replies.append(tmp.copy())
                 # store to database & for training
-                store_reply(reply_to_id=tweet.user.id_str,
+                store_reply(client, 
+                            reply_to_id=tweet.user.id_str,
                             reply_to_name=screen_name, 
                             context_id=tweet.id_str, 
                             context=tweet.text, 
@@ -200,7 +201,7 @@ def get_samples_2(tweet_replies):
         res.append(tweet_replies[tweet_replies['reply_user_id']==ruid].to_dict('records'))
     return res # list of (list of dict = tweet replies for same ruid)
 
-def store_bm(api, user_id):
+def store_bm(api, client, user_id):
     print('==================== store_bm ====================')
     bm_ids = set()
     for i in api.blocks_ids():
@@ -209,17 +210,17 @@ def store_bm(api, user_id):
         bm_ids.add(str(i))
     kind = 'bm' 
     name = user_id
-    # task_key = client.key(kind, name)
-    # entity = datastore.Entity(key=task_key)
-    entity = {}
-    entity['name'] = user_id
+    task_key = client.key(kind, name)
+    entity = datastore.Entity(key=task_key)
+    # entity = {}
+    # entity['name'] = user_id
     entity['bm_ids'] = list(bm_ids) 
-    # client.put(entity)
-    # print('Saved', entity.key.kind, entity.key.name, entity['bm_ids'])
-    pprint(entity)
+    client.put(entity)
+    print('Saved', entity.key.kind, entity.key.name, entity['bm_ids'])
+    # pprint(entity)
     return bm_ids # type is set
 
-def store_replier_network(api, user_id, reply_user_ids, bm_ids):
+def store_replier_network(api, client, user_id, reply_user_ids, bm_ids):
     print('bm_ids:', bm_ids)
     muted_friend_counts = []
     for ruid in reply_user_ids:
@@ -235,15 +236,15 @@ def store_replier_network(api, user_id, reply_user_ids, bm_ids):
     for ruid, cnt in list(zip(reply_user_ids, muted_friend_counts)):
         kind = user_id
         name = ruid
-        # task_key = client.key(kind, name)
-        # entity = datastore.Entity(key=task_key)
-        entity = {}
-        entity['kind'] = kind
-        entity['name'] = name
+        task_key = client.key(kind, name)
+        entity = datastore.Entity(key=task_key)
+        # entity = {}
+        # entity['kind'] = kind
+        # entity['name'] = name
         entity['muted_friend_counts'] = cnt
-        # client.put(entity)
-        # print('Saved', entity.key.kind, entity.key.name, entity['muted_friend_counts'])
-        pprint(entity)
+        client.put(entity)
+        print('Saved', entity.key.kind, entity.key.name, entity['muted_friend_counts'])
+        # pprint(entity)
     
 def store_label(client, reply_id, Mute):
     kind = 'tweets'
