@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Replies from <a href="https://twitter.com/{{screen_name}}">{{screen_name}}</a></title>
+  </head>
+  <body>
+    <div id="section">
+        <h2 class="serif"> Replies from {{screen_name}} </h2>
+        <form method="POST">
+        <!-- {% for reply in replies %} 
+        <img src = {{tweet_replies[i][0]['profile_image_url']}}>
+        <p> {{tweet_replies[i][0]['description']}} </p> -->
+        <div class="table-responsive">
+            <table id="selfLabel">
+                <thead>
+                    <tr>
+                        <th>Reply</th>
+                        <th>context</th>
+                    </tr>
+                </thead>
+            <tbody>
+            {% for reply in replies%}
+            <tr>
+              <td>{{reply['context']}}</td>
+              <td>{{reply['text']}}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p> Do you want to unmute this user?</p>
+      <p>
+            <div class="radio">
+                <label><input type="radio" id="unmute" name="unmute" value="1">Yes</label>
+            </div>
+            <div class="radio">
+                <label><input type="radio" id="unmute" name="unmute" value="0">No</label>
+            </div>
+        </p>
+      {% endfor %}
+      <div>
+          <input type=submit value=Submit>
+      </div>
+      </form>
+    </div>
+  </body>
+
+<script>
+    document.addEventListener('submit', function(e) {
+        console.log(e);
+    })
+</script>
+
+</html>

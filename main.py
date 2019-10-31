@@ -251,7 +251,30 @@ def dash():
         res['followed_by'] = friendship.followed_by
         result.append(res)
 
-    return render_template('dash.html', len=len(muted_users), result=result)
+    if 'unmuted' in request.args:
+        unmuted = request.args['unmuted']
+    else:
+        unmuted = None
+
+    return render_template('dash.html', len=len(muted_users), result=result, unmuted=unmuted)
+
+
+@app.route("/retrieve_user/<screen_name>", methods=['POST', 'GET'])
+def retrieve_user(screen_name):
+    if request.method == 'POST':
+        unmute = int(request.form['unmute'])
+        if unmute:
+            print('User selected unmute!', screen_name)
+            unmuted_user = api.destroy_mute(screen_name)
+            store_bm(api, datastore_client, session['user_id'])
+            return redirect(url_for('.dash', unmuted=screen_name))
+        else:
+            return redirect('/dash')
+    else:
+        query = datastore_client.query(kind=session['user_id'])
+        query.add_filter('reply_user_name', '=', screen_name)
+        replies = query.fetch()
+        return render_template('retrieve_user.html', screen_name=screen_name, replies=replies)
 
 
 if __name__ == '__main__':
