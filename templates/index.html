@@ -1,23 +1,91 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-	{%if title%}
-	<title> {{ title }} </title>
-	{%else%}
-	<title> TwitterDashboard </title>
-	{% endif %} 
-	<h1> Hello Cornell Tech Users! Welcome to our dash board </h1>
-	<form action='{{ url_for('.login') }}' method="POST">
-		<tr>
-			<!-- <td><input type="submit" value="Login"></td> -->
-            <td><button type="button" onclick="window.location.href='{{ url_for( 'login') }}'; ">Login</button></td>
-		</tr>
-	</form>
-	<form action='{{ url_for('.register') }}' method="POST">
-		<tr>
-			<!-- <td><input type="submit" value="Registration"></td> -->
-			<td><button type="button" onclick="window.location.href='{{ url_for( 'register') }}'; ">Register</button></td>
-		</tr>
-	</form>
+	<title> Home </title>
+	<meta charset="utf-8">
+	<meta name="author" content="pixelhint.com">
 
-</head>  
+
+	<!-- CSS Files -->
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/mainStyle.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/reset.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
+</head>
+<body>
+
+	<!-- header Section -->
+	<header>
+		<div class="container">
+			
+			<!-- Logo  -->
+			<a href="#" class="logo">
+				<img src="img/twitter.png" alt="twi"/>
+			</a>
+
+			<!-- Navigation Menu  -->
+			<nav>
+				<ul>
+					<li>
+					<form action='{{ url_for('.login') }}' method="POST">
+			            <button type="button" onclick="window.location.href='{{ url_for( 'login') }}'; ">Login
+			            </button>
+					</form>
+					</li>
+					<li>
+					<form action='{{ url_for('.register') }}' method="POST">
+						<!-- <td><input type="submit" value="Registration"></td> -->
+						<button type="button" onclick="window.location.href='{{ url_for( 'register') }}'; ">Register
+						</button>
+					</form>
+					</li>
+				</ul>
+			</nav>
+
+		</div>
+	</header><!-- end header -->
+
+	<!-- Slider Section -->
+	<section class="slider_wrapper">
+		
+		<div id="slides">
+
+			<div class="slide">
+				<img src="img/slide2.jpg" alt=""/>
+				<h3 class="caption"> Welcome to Twitter Dashboard! </h3>
+			</div>
+
+		</div>
+
+	</section>
+
+		<!-- Services Section -->
+	<section class="services container clearfix">
+			
+			<!-- Services Title  -->
+			<div class="section_title animated wow fadeInUp">
+				<h2>What We Do.</h2>
+			</div>
+
+			<!-- Services List  -->
+			<div class="services_list">
+				<ul>
+					<li class="animated wow fadeInRight" data-wow-delay=".2s">
+						<h3>We Detect.</h3>
+						<p>After having customer-side data we start detecting your account reply users.</p>
+					</li>
+					<li class="animated wow fadeInRight" data-wow-delay=".3s">
+						<h3>We Mute.</h3>
+						<p>If we think the user is harassment to you, we will mute it for you.</p>
+					</li>
+					<li class="animated wow fadeInRight" data-wow-delay=".4s">
+						<h3>We Display.</h3>
+						<p>We will show who we have mute for you in the dashboard, you can unmute them as well.</p>
+					</li>
+				</ul>
+			</div>
+
+	</section><!-- end services -->
+
+</body>
 </html>
