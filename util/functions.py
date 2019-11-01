@@ -1,4 +1,4 @@
-from google.cloud import datastore
+# from google.cloud import datastore
 from hashlib import pbkdf2_hmac
 from random import getrandbits
 import tweepy
