@@ -15,7 +15,7 @@
     <div id="section">
         <h2 class="serif"> Hi {{username}}! </h2>
         <form method="POST">
-        {% for i in range(length) %} 
+        {% for i in range(length) %}
         <img src = {{tweet_replies[i][0]['profile_image_url']}}>
         <p> {{tweet_replies[i][0]['description']}} </p>
         <div class="table-responsive">

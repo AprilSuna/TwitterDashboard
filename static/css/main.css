@@ -142,7 +142,7 @@ header nav ul .selected{
 
 /*  slider  */
 .slider_wrapper{
-    width: 100%;
+    width: 100vw;
     height: auto;
     position: relative;
     overflow: hidden;
@@ -179,7 +179,7 @@ header nav ul .selected{
 }
 
 .slider_wrapper .rslides_tabs{
-    width: 100%;
+    width: 100vw;
     position: absolute;
     text-align: center;
     bottom: 80px;

@@ -51,4 +51,10 @@
     </ol>  
 
 </table>
+
+<ul>
+    {% if session['logged_in'] == True %}
+    <li><a href="/logout"> Logout <span class="sr-only">(current)</span></a></li>
+    {% endif %}
+</ul>
 </html>

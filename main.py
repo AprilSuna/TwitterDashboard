@@ -56,6 +56,12 @@ def login():
         return render_template('login.html', error=error)
 
 
+# @app.route('/logout')
+# def logout():
+#     session.pop('logged_in', None)
+#     return redirect('/')
+
+
 @app.route("/register", methods=['POST', 'GET'])
 def register():
     error = None
@@ -256,4 +262,3 @@ def dash():
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8080, debug=True)
-
