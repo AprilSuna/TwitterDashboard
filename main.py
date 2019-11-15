@@ -259,6 +259,10 @@ def dash():
 
     return render_template('dash.html', len=len(muted_users), result=result)
 
+@app.route('/logout')
+def sign_out():
+    session.pop('username')
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8080, debug=True)

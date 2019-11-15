@@ -5,17 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Self Label Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/mainStyle.css') }}">
+    <link rel="stylesheet" href = "mainStyle.css">
+    <!-- <link rel="stylesheet" href = "formMain.css"> -->
   </head>
   <body>
-    <div id="nav">
+<!--     <div id="nav">
         Label<br>
         Home<br>
         MyDash<br>       
-    </div>
-    <div id="section">
+    </div> -->
+    <!-- <div id="section"> -->
+      <div class="login-page">
         <h2 class="serif"> Hi {{username}}! </h2>
-        <form method="POST">
+        <!-- <form method="POST"> -->
+        <form class="login-form" method="POST">
         {% for i in range(length) %}
+        <div class="form">
         <img src = {{tweet_replies[i][0]['profile_image_url']}}>
         <p> {{tweet_replies[i][0]['description']}} </p>
         <div class="table-responsive">
@@ -39,12 +44,20 @@
       <p> Do you want to mute this user or not?</p>
       <p>
             <div class="radio">
-                <label><input type="radio" id="Mute" name="{{'mute' + i|string}}" value="1">Yes</label>
+              <label>
+              <input type="radio" id="Mute" name="{{'mute' + i|string}}" value="1">
+              Yes
+              </label>
             </div>
+            <br/>
             <div class="radio">
-                <label><input type="radio" id="Mute" name="{{'mute' + i|string}}" value="0">No</label>
+              <label>
+              <input type="radio" id="Mute" name="{{'mute' + i|string}}" value="0">
+              No
+              </label>
             </div>
         </p>
+        </div>
       {% endfor %}
       <div>
           <input type=submit value=Submit>
