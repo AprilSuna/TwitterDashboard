@@ -14,10 +14,10 @@
             The username should match with your Twitter Screen Name (the one after the '@' sign). Thank you!
         </h4>
         <div class="form">
-          <form class="login-form" method="POST">
-            <input type="text" placeholder="name"/>
-            <input type="password" placeholder="password"/>
-            <input type="password" placeholder="Repeat password"/>
+          <form method="POST" class="login-form">
+            <input type="text" name="username" placeholder="name"/>
+            <input type="password"  name="password" placeholder="password"/>
+            <input type="password" name="password-repeat" placeholder="Repeat password"/>
             <button type="submit"> Create </button>
             <p class="message">Already registered? 
               <a href='{{ url_for('login') }}'>

@@ -9,9 +9,9 @@
  <div class="login-page">
     <h2>Please Login</h2>
   <div class="form">
-    <form class="login-form" method="POST">
-      <input type="text" placeholder="username"/>
-      <input type="password" placeholder="password"/>
+    <form method="POST" class="login-form">
+      <input type="text" name="username" placeholder="username"/>
+      <input type="password" name="password" placeholder="password"/>
       <button type="submit">login</button>
       <p class="message">Not registered? 
         <a href='{{ url_for('register') }}'>

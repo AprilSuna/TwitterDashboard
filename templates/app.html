@@ -5,19 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Self Label Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/mainStyle.css') }}">
-    <link rel="stylesheet" href = "mainStyle.css">
-    <!-- <link rel="stylesheet" href = "formMain.css"> -->
   </head>
   <body>
-<!--     <div id="nav">
-        Label<br>
-        Home<br>
-        MyDash<br>       
-    </div> -->
-    <!-- <div id="section"> -->
       <div class="login-page">
         <h2 class="serif"> Hi {{username}}! </h2>
-        <!-- <form method="POST"> -->
         <form class="login-form" method="POST">
         {% for i in range(length) %}
         <div class="form">

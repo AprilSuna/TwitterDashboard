@@ -28,7 +28,16 @@ app.secret_key = 'tsdhisiusdfdsfaSecsdfsdfrfghdetkey'
 def index():
     title = 'TwitterDashboardHomePage'
     return render_template('index.html', title=title)
-
+    # res = {}
+    # res['profile_image_url_https'] = 'aa'
+    # res['screen_name'] = 'uname'
+    # res['description'] = 'disc'
+    # friendship = 'haha'
+    # res['following'] = 'nnd'
+    # res['followed_by'] = 'friendship.followed_by'
+    # result = list(res)
+    # unmuted = ['april']
+    # return render_template('dash.html', len=0, result=result, unmuted=unmuted)
 
 @app.route("/login", methods=['POST', 'GET'])
 def login():
@@ -67,7 +76,8 @@ def register():
     error = None
     loaded = False
     if request.method == 'POST':
-        session['username'] = request.form.get('username')
+        session['username'] = request.form.get("username")
+        print(request.form.get("username"))
         session['password'] = request.form.get('password')
         rePassword = request.form.get("password-repeat")
         if len(session['username']) != 0:
@@ -228,13 +238,13 @@ def initial():
 def dash():
     if 'token' in session:
         print('get tokens from session')
-        token, token_secret = session['token']
     else:
         print('get tokens from db')
         key = datastore_client.key('user', session['username'])
         local_user = datastore_client.get(key)
-        token, token_secret = local_user['access_token'], local_user['access_token_secret']
+        session['token'] = (local_user['access_token'], local_user['access_token_secret'])
         # token, token_secret = access_token, access_token_secret
+    token, token_secret = session['token']
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     # , callback
     auth.set_access_token(token, token_secret)
@@ -297,7 +307,11 @@ def retrieve_user(screen_name):
 
 @app.route('/logout')
 def sign_out():
-    session.pop('username')
+    # session.pop('username')
+    del session['username']
+    del session['password']
+    del session['token']
+    del session['user_id']
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
