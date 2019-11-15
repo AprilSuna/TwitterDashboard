@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, request, session
+from flask import Flask, render_template, redirect, request, session, url_for
 from util.functions import *
 from util.StreamListener import StreamListener
 from googleapiclient import discovery
@@ -7,8 +7,8 @@ import pandas as pd
 import tweepy, logging
 
 # kelly's tokens
-access_token = '364156861-cSyt6v8Rjg4n8aVxRqI7stklhtvv69raNR7X3Tp9'
-access_token_secret = 'q9AppxYixPtI7HAi4Fxxd2i6Nl6ESGDqzCVqVOOFjr0FB'
+access_token = '364156861-XNpY74FG6xIiGLYfzqASY2vHCKonKeGxmnWq8D9e'
+access_token_secret = 'KY13j9VzVZs1p3g6cQxSh1nRULIsGrHDiwqizmnswfqvs'
 consumer_key = '0IvIaXCm8CUHeuayBiFS3Blwd' 
 consumer_secret = 'WlgHUfC7waVlRrktuyySBRQHwVSBPFpxEud2hGY08i83NFXpNk'
 perspective_api_key = 'AIzaSyAQzy172qDSsB89r-8sKcRKoLKncsHq8eU'
@@ -230,12 +230,13 @@ def dash():
         print('get tokens from session')
         token, token_secret = session['token']
     else:
+        print('get tokens from db')
         key = datastore_client.key('user', session['username'])
         local_user = datastore_client.get(key)
         token, token_secret = local_user['access_token'], local_user['access_token_secret']
-        print('get tokens from db')
         # token, token_secret = access_token, access_token_secret
-    auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+    # , callback
     auth.set_access_token(token, token_secret)
     api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
     user = api.get_user(screen_name=session['username']) # session['username'] from login
@@ -257,7 +258,42 @@ def dash():
         res['followed_by'] = friendship.followed_by
         result.append(res)
 
-    return render_template('dash.html', len=len(muted_users), result=result)
+    if 'unmuted' in request.args:
+        unmuted = request.args['unmuted']
+    else:
+        unmuted = None
+
+    return render_template('dash.html', len=len(muted_users), result=result, unmuted=unmuted)
+
+
+@app.route("/retrieve_user/<screen_name>", methods=['POST', 'GET'])
+def retrieve_user(screen_name):
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+    # , callback
+    auth.set_access_token(access_token, access_token_secret)
+    api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+
+    if request.method == 'POST':
+        unmute = int(request.form['unmute'])
+        if unmute:
+            user_id = api.get_user(screen_name).id
+            print('User selected unmute!', screen_name)
+            if user_id in api.mutes_ids():
+                unmuted_user = api.destroy_mute(screen_name)
+            elif user_id in api.blocks_ids():
+                unmuted_user = api.destroy_block(screen_name)
+            store_bm(api, datastore_client, session['user_id'])
+            return redirect(url_for('.dash', unmuted=screen_name))
+        else:
+            return redirect('/dash')
+    else:
+        query = datastore_client.query(kind=session['user_id'])
+        query.add_filter('reply_user_name', '=', screen_name)
+        replies = query.fetch()
+        # replies = [{'context':'kelly\'s original context 1', 'text':'april\'s reply text 1'}, 
+                    # {'context':'kelly\'s original context 2', 'text':'april\'s reply text 2'}]
+        # replies = iter(replies)
+        return render_template('retrieve_user.html', screen_name=screen_name, replies=replies)
 
 @app.route('/logout')
 def sign_out():

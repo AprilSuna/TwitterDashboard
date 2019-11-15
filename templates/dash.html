@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-    {%if title%}
+    {% if title %}
     <title> {{ title }}</title>
-    {%else%}
+    {% else %}
     <title> TwitterDashboard</title>
     {% endif %} 
-    <h1> Generating your dashboard... Please wait</h1>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/mainStyle.css') }}">
     <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/navbar.css') }}"> -->
 </head>
 
-<h2>Muted user table</h2>
+
+{% if not unmuted %}
+<h1> Generating your dashboard... Please wait</h1>
+{% else %}
+<h1> User {{unmuted}} is unmuted!</h1>
+{% endif %}
+<h2> Muted user table </h2>
 
 <body>
     <div class="wrapper">
@@ -41,7 +46,11 @@
         {%for i in range(0, len)%}
             <tr>
             <td width="20%"><img src="{{result[i].profile_image_url_https}}" class="w-12 p-1 float-left image-thumbnail"></td>
-            <td width="20%"><a href="https://twitter.com/{{result[i]['screen_name']}}">{{result[i]['screen_name']}}</a></td>
+            <td width="20%">
+                <a href='{{ url_for('.retrieve_user', screen_name=result[i]['screen_name']) }}'>
+                    {{result[i]['screen_name']}}
+                </a>
+            </td>
             <td width="20%">{{result[i]['description']}}</td>
             <td width="20%">{{result[i]['followed_by']}}</td>
             <td width="20%">{{result[i]['following']}}</td>
