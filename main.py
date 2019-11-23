@@ -169,6 +169,11 @@ def initial():
         except:
             print('error')
 
+        
+        # insert mock data into user table for model training
+        print('start insertion for user {}'.format(user.id_str))
+        store_user_mock(datastore_client, user.id_str, session['username'], service)
+
         # get initial block and mute ids, store to db for further update
         # also needed for network feature extraction
         bm_ids = store_bm(api, datastore_client, user.id_str)
@@ -313,6 +318,34 @@ def sign_out():
     del session['token']
     del session['user_id']
     return redirect(url_for('index'))
+
+# # load mock data
+# import csv
+# @app.route('/mock')
+# def mock():
+#     with open('mock10.csv') as f:
+#         csv_reader = csv.reader(f, delimiter=',')
+#         line_count = 0
+#         for row in csv_reader:
+#             if line_count == 0:
+#                 print('Column names are {}'.format(", ".join(row)))
+#                 line_count += 1
+#             else:
+#                 task_key = datastore_client.key('mock_new', line_count)
+#                 entity = datastore.Entity(key=task_key)
+#                 entity['reply_id'] = row[0]
+#                 entity['reply_user_id'] = row[1]
+#                 entity['reply_user_name'] = row[2]
+#                 entity['context_id'] = row[3]
+#                 entity['reply_to_user'] = row[4]
+#                 entity['reply_to_name'] = row[5]
+#                 entity['text'] = row[6]
+#                 entity['context'] = row[7]
+#                 datastore_client.put(entity)
+#                 line_count += 1
+#         print('Processed {} lines.'.format(line_count))
+    
+#     return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8080, debug=True)

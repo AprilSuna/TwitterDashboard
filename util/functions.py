@@ -2,11 +2,13 @@ from google.cloud import datastore
 from hashlib import pbkdf2_hmac
 from random import getrandbits
 import tweepy
+# from google.appengine.api import urlfetch
 from googleapiclient import discovery
 from googleapiclient.errors import HttpError
 import pandas as pd
 from pprint import pprint
 import time
+
 
 def get_users(users, offset, per_page):
     return (users[offset: offset + per_page], offset)
@@ -141,7 +143,7 @@ def get_initial_tweets(api, client, screen_name, count, service):
     # tweet_replies = get_samples_1(tweet_replies)
 
     # option 2: group by reply users
-    tweet_replies = get_samples_2(tweet_replies)
+    # tweet_replies = get_samples_2(tweet_replies)
     pprint(tweet_replies)
     return tweet_replies
              
@@ -255,3 +257,42 @@ def store_label(client, reply_id, Mute):
     client.put(entity)
     print('Saved Label', entity.key.name, entity)
 
+
+from random import sample
+def store_user_mock(client, user_id, user_name, service):
+    query = client.query(kind='mock')
+    query.distinct_on = ['reply_user_id']
+    query.projection = ['reply_user_id']
+    results = list(query.fetch())
+    print('{} unique repliers'.format(len(results)))
+    # print(results[:3])
+    
+    chosen = sample(results, 3)
+    cnt = 0
+    for replier in chosen:
+        cnt += 1
+        query = client.query(kind='mock')
+        query.add_filter('reply_user_id', '=', replier['reply_user_id'])
+        results = list(query.fetch())
+        print('{} replies from user {}'.format(len(results), replier['reply_user_id']))
+        # print(results[0])
+
+        for reply in results:
+            task_key = client.key(user_id, reply['reply_id'])
+            entity = datastore.Entity(key=task_key)
+            entity['reply_to_name'] = reply['reply_to_name']
+            entity['context_id'] = reply['context_id']
+            entity['context'] = reply['context']
+            entity['reply_user_id'] = reply['reply_user_id']
+            entity['reply_user_name'] = reply['reply_user_name']
+            # entity['reply_id'] = row['reply_id']
+            entity['text'] = reply['text']
+            entity['reply_to_name'] = user_name
+
+            tmp = get_perspective(service, reply['text'])
+            for tox, value in tmp.items():
+                entity[tox] = value
+
+            client.put(entity)
+
+    print('inserted {} users\' replies'.format(cnt))
