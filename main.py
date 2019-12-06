@@ -180,6 +180,11 @@ def initial():
         # scrape initial set of tweets for labeling
         tweet_replies = get_initial_tweets(api, datastore_client, screen_name=session['username'], count=10, service=service)
         session['tweet_replies'] = tweet_replies
+
+        print('+++++++++ print tweet repies +++++++++')
+        print(len(tweet_replies))
+        print(tweet_replies[:2])
+
         # check how many friends of the reply user is muted by the poster
         reply_user_ids = list(set([t[0]['reply_user_id'] for t in tweet_replies]))
         store_replier_network(api, datastore_client, user.id_str, reply_user_ids, bm_ids)
@@ -323,7 +328,7 @@ def sign_out():
 # import csv
 # @app.route('/mock')
 # def mock():
-#     with open('mock10.csv') as f:
+#     with open('dc2.csv') as f:
 #         csv_reader = csv.reader(f, delimiter=',')
 #         line_count = 0
 #         for row in csv_reader:
@@ -331,16 +336,28 @@ def sign_out():
 #                 print('Column names are {}'.format(", ".join(row)))
 #                 line_count += 1
 #             else:
-#                 task_key = datastore_client.key('mock_new', line_count)
+#                 task_key = datastore_client.key('DanielCrenshaw', line_count)
 #                 entity = datastore.Entity(key=task_key)
-#                 entity['reply_id'] = row[0]
-#                 entity['reply_user_id'] = row[1]
-#                 entity['reply_user_name'] = row[2]
-#                 entity['context_id'] = row[3]
-#                 entity['reply_to_user'] = row[4]
-#                 entity['reply_to_name'] = row[5]
-#                 entity['text'] = row[6]
-#                 entity['context'] = row[7]
+#                 entity['tweet_id'] = row[0]
+#                 entity['user_id'] = row[1]
+#                 entity['user_handle'] = row[2]
+#                 entity['replyTo'] = row[3]
+#                 entity['replyTo_user'] = row[4]
+#                 entity['candidate_name'] = row[5]
+#                 entity['candidate_handle'] = row[6]
+#                 entity['text'] = row[7]
+#                 entity['context'] = row[8]
+#                 entity['from'] = row[9]
+#                 entity['FLIRTATION'] = row[10]
+#                 entity['IDENTITY_ATTACK'] = row[11]
+#                 entity['INFLAMMATORY'] = row[12]
+#                 entity['INSULT'] = row[13]
+#                 entity['OBSCENE'] = row[14]
+#                 entity['PROFANITY'] = row[15]
+#                 entity['SEVERE_TOXICITY'] = row[16]
+#                 entity['SEXUALLY_EXPLICIT'] = row[17]
+#                 entity['THREAT'] = row[18]
+#                 entity['TOXICITY'] = row[19]       
 #                 datastore_client.put(entity)
 #                 line_count += 1
 #         print('Processed {} lines.'.format(line_count))

@@ -143,7 +143,7 @@ def get_initial_tweets(api, client, screen_name, count, service):
     # tweet_replies = get_samples_1(tweet_replies)
 
     # option 2: group by reply users
-    # tweet_replies = get_samples_2(tweet_replies)
+    tweet_replies = get_samples_2(tweet_replies)
     pprint(tweet_replies)
     return tweet_replies
              
@@ -260,7 +260,7 @@ def store_label(client, reply_id, Mute):
 
 from random import sample
 def store_user_mock(client, user_id, user_name, service):
-    query = client.query(kind='mock')
+    query = client.query(kind='mock_new')
     query.distinct_on = ['reply_user_id']
     query.projection = ['reply_user_id']
     results = list(query.fetch())
@@ -271,7 +271,7 @@ def store_user_mock(client, user_id, user_name, service):
     cnt = 0
     for replier in chosen:
         cnt += 1
-        query = client.query(kind='mock')
+        query = client.query(kind='mock_new')
         query.add_filter('reply_user_id', '=', replier['reply_user_id'])
         results = list(query.fetch())
         print('{} replies from user {}'.format(len(results), replier['reply_user_id']))
